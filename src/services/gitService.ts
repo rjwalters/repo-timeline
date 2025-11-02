@@ -1,4 +1,5 @@
 import { CommitData, FileEdge, FileNode } from "../types";
+import { StorageService } from "./storageService";
 
 interface RawCommitData {
 	hash: string;
@@ -14,6 +15,12 @@ interface RawFileData {
 	type?: string;
 }
 
+export interface LoadProgress {
+	loaded: number;
+	total: number;
+	percentage: number;
+}
+
 export class GitService {
 	private repoPath: string;
 
@@ -21,10 +28,59 @@ export class GitService {
 		this.repoPath = repoPath;
 	}
 
-	async getCommitHistory(): Promise<CommitData[]> {
-		// This will be implemented to fetch git history
-		// For now, we'll use the browser's ability to call a backend API
-		// or use a demo/mock implementation
+	/**
+	 * Get a cache key for this repository
+	 */
+	private getCacheKey(): string {
+		// Normalize repo path to create consistent key
+		return this.repoPath.toLowerCase().replace(/[^a-z0-9]/g, "-");
+	}
+
+	/**
+	 * Get commit history with caching and incremental loading
+	 */
+	async getCommitHistory(
+		onProgress?: (progress: LoadProgress) => void,
+		forceRefresh = false,
+	): Promise<CommitData[]> {
+		const cacheKey = this.getCacheKey();
+
+		// Try to load from cache first
+		if (!forceRefresh) {
+			const cached = StorageService.loadCommits(cacheKey);
+			if (cached) {
+				console.log(
+					`Loaded ${cached.length} commits from cache for ${this.repoPath}`,
+				);
+				return cached;
+			}
+		}
+
+		// Fetch fresh data
+		try {
+			const commits = await this.fetchCommitsWithProgress(onProgress);
+			// Save to cache
+			StorageService.saveCommits(cacheKey, commits);
+			return commits;
+		} catch (error) {
+			console.error("Error fetching commits:", error);
+			// Try cache as fallback
+			const cached = StorageService.loadCommits(cacheKey);
+			if (cached) {
+				console.log("Using stale cache as fallback");
+				return cached;
+			}
+			// Return demo data as last resort
+			return this.calculateSizeChanges(this.getDemoData());
+		}
+	}
+
+	/**
+	 * Fetch commits with progress reporting
+	 */
+	private async fetchCommitsWithProgress(
+		onProgress?: (progress: LoadProgress) => void,
+	): Promise<CommitData[]> {
 		try {
 			const response = await fetch(
 				`/api/commits?path=${encodeURIComponent(this.repoPath)}`,
@@ -33,12 +89,77 @@ export class GitService {
 				throw new Error("Failed to fetch commits");
 			}
 			const data = await response.json();
-			return this.parseCommits(data);
-		} catch (error) {
-			console.error("Error fetching commits:", error);
+
+			// Simulate incremental parsing for progress
+			const commits = this.parseCommitsWithProgress(data, onProgress);
+			return commits;
+		} catch (_error) {
+			console.log("API not available, using demo data");
 			// Return demo data for development
-			return this.calculateSizeChanges(this.getDemoData());
+			const demoData = this.getDemoData();
+
+			// Simulate loading progress for demo
+			if (onProgress) {
+				for (let i = 0; i <= demoData.length; i++) {
+					onProgress({
+						loaded: i,
+						total: demoData.length,
+						percentage: Math.round((i / demoData.length) * 100),
+					});
+					// Small delay to simulate loading
+					await new Promise((resolve) => setTimeout(resolve, 100));
+				}
+			}
+
+			return this.calculateSizeChanges(demoData);
 		}
+	}
+
+	/**
+	 * Parse commits with progress reporting
+	 */
+	private parseCommitsWithProgress(
+		data: RawCommitData[],
+		onProgress?: (progress: LoadProgress) => void,
+	): CommitData[] {
+		const commits: CommitData[] = [];
+
+		for (let i = 0; i < data.length; i++) {
+			const commit = data[i];
+			commits.push({
+				hash: commit.hash,
+				message: commit.message,
+				author: commit.author,
+				date: new Date(commit.date),
+				files: this.buildFileTree(commit.files),
+				edges: this.buildEdges(commit.files),
+			});
+
+			if (onProgress && i % 10 === 0) {
+				// Report progress every 10 commits
+				onProgress({
+					loaded: i + 1,
+					total: data.length,
+					percentage: Math.round(((i + 1) / data.length) * 100),
+				});
+			}
+		}
+
+		return this.calculateSizeChanges(commits);
+	}
+
+	/**
+	 * Clear cache for this repository
+	 */
+	clearCache(): void {
+		StorageService.clearCache(this.getCacheKey());
+	}
+
+	/**
+	 * Get cache information
+	 */
+	getCacheInfo() {
+		return StorageService.getCacheInfo(this.getCacheKey());
 	}
 
 	private calculateSizeChanges(commits: CommitData[]): CommitData[] {
@@ -75,17 +196,6 @@ export class GitService {
 			}
 		}
 		return commits;
-	}
-
-	private parseCommits(data: RawCommitData[]): CommitData[] {
-		return data.map((commit) => ({
-			hash: commit.hash,
-			message: commit.message,
-			author: commit.author,
-			date: new Date(commit.date),
-			files: this.buildFileTree(commit.files),
-			edges: this.buildEdges(commit.files),
-		}));
 	}
 
 	private buildFileTree(files: RawFileData[]): FileNode[] {

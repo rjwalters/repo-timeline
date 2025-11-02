@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { GitService } from "../services/gitService";
+import { RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GitService, LoadProgress } from "../services/gitService";
 import { CommitData, FileNode } from "../types";
 import { RepoGraph3D } from "./RepoGraph3D";
 import {
@@ -16,30 +17,47 @@ export function RepoTimeline({ repoPath }: RepoTimelineProps) {
 	const [commits, setCommits] = useState<CommitData[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [loading, setLoading] = useState(true);
+	const [loadProgress, setLoadProgress] = useState<LoadProgress | null>(null);
 	const [selectedNode, setSelectedNode] = useState<FileNode | null>(null);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
 	const [playbackDirection, setPlaybackDirection] =
 		useState<PlaybackDirection>("forward");
+	const [fromCache, setFromCache] = useState(false);
 	const playbackTimerRef = useRef<number | null>(null);
+	const gitServiceRef = useRef<GitService | null>(null);
 
-	useEffect(() => {
-		const loadCommits = async () => {
+	const loadCommits = useCallback(
+		async (forceRefresh = false) => {
 			setLoading(true);
+			setLoadProgress(null);
 			try {
 				const gitService = new GitService(repoPath);
-				const commitsData = await gitService.getCommitHistory();
+				gitServiceRef.current = gitService;
+
+				const commitsData = await gitService.getCommitHistory((progress) => {
+					setLoadProgress(progress);
+				}, forceRefresh);
+
 				setCommits(commitsData);
-				setCurrentIndex(0); // Start at first commit
+				setCurrentIndex(0);
+
+				// Check if data was from cache
+				const cacheInfo = gitService.getCacheInfo();
+				setFromCache(cacheInfo.exists && !forceRefresh);
 			} catch (error) {
 				console.error("Error loading commits:", error);
 			} finally {
 				setLoading(false);
+				setLoadProgress(null);
 			}
-		};
+		},
+		[repoPath],
+	);
 
+	useEffect(() => {
 		loadCommits();
-	}, [repoPath]);
+	}, [loadCommits]);
 
 	// Playback auto-advance effect
 	useEffect(() => {
@@ -91,9 +109,28 @@ export function RepoTimeline({ repoPath }: RepoTimelineProps) {
 	if (loading) {
 		return (
 			<div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
-				<div className="text-center">
-					<div className="text-xl mb-2">Loading repository...</div>
-					<div className="text-gray-400">Analyzing commit history</div>
+				<div className="text-center max-w-md">
+					<div className="text-xl mb-4">Loading repository...</div>
+					{loadProgress ? (
+						<>
+							<div className="mb-2 text-gray-400">
+								Loading commits: {loadProgress.loaded} / {loadProgress.total}
+							</div>
+							<div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
+								<div
+									className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+									style={{ width: `${loadProgress.percentage}%` }}
+								/>
+							</div>
+							<div className="text-sm text-gray-500">
+								{loadProgress.percentage}%
+							</div>
+						</>
+					) : (
+						<div className="text-gray-400">
+							{fromCache ? "Loading from cache..." : "Analyzing commit history"}
+						</div>
+					)}
 				</div>
 			</div>
 		);
@@ -165,8 +202,24 @@ export function RepoTimeline({ repoPath }: RepoTimelineProps) {
 
 			{/* Header */}
 			<div className="absolute top-4 left-4 bg-gray-900 bg-opacity-90 text-white p-4 rounded-lg border border-gray-700">
-				<h1 className="text-xl font-bold mb-1">Repo Timeline Visualizer</h1>
-				<div className="text-sm text-gray-400">{repoPath}</div>
+				<div className="flex items-center justify-between gap-4">
+					<div>
+						<h1 className="text-xl font-bold mb-1">Repo Timeline Visualizer</h1>
+						<div className="text-sm text-gray-400">{repoPath}</div>
+						{fromCache && (
+							<div className="text-xs text-blue-400 mt-1">
+								📦 Loaded from cache
+							</div>
+						)}
+					</div>
+					<button
+						onClick={() => loadCommits(true)}
+						className="p-2 hover:bg-gray-800 rounded transition-colors"
+						title="Refresh data"
+					>
+						<RefreshCw size={20} />
+					</button>
+				</div>
 			</div>
 		</div>
 	);
