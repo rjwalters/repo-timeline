@@ -4,6 +4,16 @@ A 3D visualization tool for exploring Git repository evolution over time. Watch 
 
 🌐 **[Live Demo](https://rjwalters.github.io/repo-timeline/)**
 
+## Deployment
+
+This project automatically deploys to GitHub Pages via GitHub Actions. To enable:
+
+1. Go to repository **Settings** → **Pages**
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**
+3. Push to main branch to trigger deployment
+
+The site will be available at `https://[username].github.io/repo-timeline/`
+
 ## Features
 
 - **3D Force-Directed Graph**: Files and directories are visualized as nodes connected by springs, creating an organic, physics-based layout
