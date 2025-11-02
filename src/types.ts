@@ -12,6 +12,8 @@ export interface FileNode {
 	vz?: number;
 	previousSize?: number; // Size in previous commit
 	sizeChange?: "increase" | "decrease" | "unchanged"; // Change from previous commit
+	fileStatus?: "added" | "deleted" | "moved" | "unchanged"; // File lifecycle status
+	previousPath?: string; // Path in previous commit (for detecting moves)
 }
 
 export interface FileEdge {

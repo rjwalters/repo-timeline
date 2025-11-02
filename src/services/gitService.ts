@@ -163,12 +163,13 @@ export class GitService {
 	}
 
 	private calculateSizeChanges(commits: CommitData[]): CommitData[] {
-		// Process commits in order to track size changes
+		// Process commits in order to track size and status changes
 		for (let i = 0; i < commits.length; i++) {
 			if (i === 0) {
-				// First commit: no previous data, mark all as unchanged
+				// First commit: all files are new
 				commits[i].files.forEach((file) => {
 					file.sizeChange = "unchanged";
+					file.fileStatus = "added";
 				});
 			} else {
 				// Compare with previous commit
@@ -176,11 +177,18 @@ export class GitService {
 				const previousFileMap = new Map(
 					previousCommit.files.map((f) => [f.path, f]),
 				);
+				const currentFileMap = new Map(
+					commits[i].files.map((f) => [f.path, f]),
+				);
 
+				// Check current files
 				commits[i].files.forEach((file) => {
 					const prevFile = previousFileMap.get(file.path);
 					if (prevFile) {
+						// File exists in both commits
 						file.previousSize = prevFile.size;
+						file.fileStatus = "unchanged";
+
 						if (file.size > prevFile.size) {
 							file.sizeChange = "increase";
 						} else if (file.size < prevFile.size) {
@@ -189,10 +197,59 @@ export class GitService {
 							file.sizeChange = "unchanged";
 						}
 					} else {
-						// New file
-						file.sizeChange = "increase";
+						// New file - check if it's a move (same name, different path)
+						const fileName = file.path.split("/").pop();
+						let isMove = false;
+
+						for (const [prevPath, prevFileNode] of previousFileMap) {
+							const prevFileName = prevPath.split("/").pop();
+							if (
+								prevFileName === fileName &&
+								!currentFileMap.has(prevPath) &&
+								file.size === prevFileNode.size
+							) {
+								// Likely a move/rename
+								file.fileStatus = "moved";
+								file.previousPath = prevPath;
+								file.previousSize = prevFileNode.size;
+								file.sizeChange = "unchanged";
+								isMove = true;
+								break;
+							}
+						}
+
+						if (!isMove) {
+							file.fileStatus = "added";
+							file.sizeChange = "increase";
+						}
 					}
 				});
+
+				// Add deleted files as zero-size nodes for animation
+				for (const [prevPath, prevFile] of previousFileMap) {
+					if (!currentFileMap.has(prevPath)) {
+						// Check if this file was moved
+						let wasMoved = false;
+
+						for (const currentFile of commits[i].files) {
+							if (currentFile.previousPath === prevPath) {
+								wasMoved = true;
+								break;
+							}
+						}
+
+						if (!wasMoved) {
+							// File was deleted - add it with size 0 for animation
+							commits[i].files.push({
+								...prevFile,
+								size: 0,
+								previousSize: prevFile.size,
+								fileStatus: "deleted",
+								sizeChange: "decrease",
+							});
+						}
+					}
+				}
 			}
 		}
 		return commits;
