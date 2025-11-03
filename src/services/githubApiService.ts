@@ -1,5 +1,6 @@
 import { CommitData } from "../types";
 import { buildEdges, buildFileTree } from "../utils/fileTreeBuilder";
+import { FileStateTracker } from "../utils/fileStateTracker";
 
 export interface GitHubPR {
 	number: number;
@@ -338,7 +339,7 @@ export class GitHubApiService {
 		}
 
 		const commits: CommitData[] = [];
-		const fileState = new Map<string, number>(); // Track file sizes
+		const fileStateTracker = new FileStateTracker();
 
 		// Process each PR
 		for (let i = 0; i < prs.length; i++) {
@@ -357,33 +358,10 @@ export class GitHubApiService {
 			const prFiles = pr.files || (await this.fetchPRFiles(pr.number));
 
 			// Update file state
-			for (const file of prFiles) {
-				if (file.status === "removed") {
-					fileState.delete(file.filename);
-				} else if (file.status === "renamed" && file.previous_filename) {
-					// Handle renames
-					const oldSize = fileState.get(file.previous_filename) || 0;
-					fileState.delete(file.previous_filename);
-					fileState.set(
-						file.filename,
-						oldSize + file.additions - file.deletions,
-					);
-				} else {
-					// Added or modified
-					const currentSize = fileState.get(file.filename) || 0;
-					fileState.set(
-						file.filename,
-						currentSize + file.additions - file.deletions,
-					);
-				}
-			}
+			fileStateTracker.updateFromPRFiles(prFiles);
 
 			// Build commit snapshot from current file state using shared utilities
-			const filePaths = Array.from(fileState.entries());
-			const fileData = filePaths.map(([path, size]) => ({
-				path,
-				size: Math.max(0, size), // Ensure non-negative
-			}));
+			const fileData = fileStateTracker.getFileData();
 
 			const files = buildFileTree(fileData);
 			const edges = buildEdges(fileData);
