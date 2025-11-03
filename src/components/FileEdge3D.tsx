@@ -7,7 +7,10 @@ interface FileEdge3DProps {
 	nodes: Map<string, FileNode>;
 }
 
-export const FileEdge3D = memo(function FileEdge3D({ edge, nodes }: FileEdge3DProps) {
+export const FileEdge3D = memo(function FileEdge3D({
+	edge,
+	nodes,
+}: FileEdge3DProps) {
 	const source = nodes.get(edge.source);
 	const target = nodes.get(edge.target);
 

@@ -9,7 +9,10 @@ interface FileNode3DProps {
 	onClick?: (node: FileNode) => void;
 }
 
-export const FileNode3D = memo(function FileNode3D({ node, onClick }: FileNode3DProps) {
+export const FileNode3D = memo(function FileNode3D({
+	node,
+	onClick,
+}: FileNode3DProps) {
 	const meshRef = useRef<THREE.Mesh>(null);
 	const [transitionOpacity, setTransitionOpacity] = useState(1);
 	const [animatedRadius, setAnimatedRadius] = useState(0);
