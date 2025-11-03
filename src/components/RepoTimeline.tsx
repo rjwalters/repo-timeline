@@ -1,5 +1,6 @@
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePlaybackTimer } from "../hooks/usePlaybackTimer";
 import type { RepoTimelineProps } from "../lib/types";
 import type { RateLimitInfo } from "../services/githubApiService";
 import { GitService, LoadProgress } from "../services/gitService";
@@ -50,10 +51,20 @@ export function RepoTimeline({
 	);
 	const [fromCache, setFromCache] = useState(false);
 	const [rateLimitedCache, setRateLimitedCache] = useState(false);
-	const playbackTimerRef = useRef<number | null>(null);
 	const gitServiceRef = useRef<GitService | null>(null);
 
 	const currentIndex = getCurrentIndex(commits, currentTime);
+
+	// Use playback timer hook for automatic time advancement
+	usePlaybackTimer({
+		isPlaying,
+		playbackSpeed,
+		playbackDirection,
+		timeRange,
+		hasCommits: commits.length > 0,
+		onTimeChange: setCurrentTime,
+		onPlayingChange: setIsPlaying,
+	});
 
 	// Load metadata first to get time range
 	useEffect(() => {
@@ -187,56 +198,6 @@ export function RepoTimeline({
 	useEffect(() => {
 		loadCommits();
 	}, [loadCommits]);
-
-	// Playback auto-advance effect
-	useEffect(() => {
-		if (isPlaying && commits.length > 0) {
-			// Update every 100ms for smooth playback
-			const updateInterval = 100;
-			// Time increment per update (in ms of repo time)
-			// At 1x: real time - 1 second of repo time per 1 second of real time
-			// Update every 100ms means we advance 100ms of repo time at 1x
-			// At higher speeds, multiply accordingly
-			const timeIncrement = updateInterval * playbackSpeed;
-
-			playbackTimerRef.current = setInterval(() => {
-				setCurrentTime((prevTime) => {
-					let nextTime: number;
-
-					if (playbackDirection === "forward") {
-						nextTime = prevTime + timeIncrement;
-						if (nextTime >= timeRange.end) {
-							// Stop at end
-							setIsPlaying(false);
-							return timeRange.end;
-						}
-					} else {
-						nextTime = prevTime - timeIncrement;
-						if (nextTime <= timeRange.start) {
-							// Stop at beginning
-							setIsPlaying(false);
-							return timeRange.start;
-						}
-					}
-
-					return nextTime;
-				});
-			}, updateInterval);
-
-			return () => {
-				if (playbackTimerRef.current) {
-					clearInterval(playbackTimerRef.current);
-				}
-			};
-		}
-	}, [
-		isPlaying,
-		playbackSpeed,
-		playbackDirection,
-		commits.length,
-		timeRange.start,
-		timeRange.end,
-	]);
 
 	const handlePlayPause = () => {
 		setIsPlaying(!isPlaying);
