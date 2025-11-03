@@ -4,7 +4,6 @@ import type { CommitData } from "../types";
 import { useRepoData } from "./useRepoData";
 
 // Create mock methods
-const mockGetRepoStatus = vi.fn();
 const mockGetMetadata = vi.fn();
 const mockGetCommitHistory = vi.fn();
 const mockGetCacheInfo = vi.fn();
@@ -15,7 +14,6 @@ vi.mock("../services/gitService", () => {
 	return {
 		GitService: vi.fn(function MockGitService() {
 			return {
-				getRepoStatus: mockGetRepoStatus,
 				getMetadata: mockGetMetadata,
 				getCommitHistory: mockGetCommitHistory,
 				getCacheInfo: mockGetCacheInfo,
@@ -52,7 +50,6 @@ describe("useRepoData", () => {
 		vi.clearAllMocks();
 
 		// Default mock implementations
-		mockGetRepoStatus.mockResolvedValue(null);
 		mockGetMetadata.mockResolvedValue({
 			prs: [{ number: 1 }, { number: 2 }],
 			timeRange: {
@@ -511,72 +508,8 @@ describe("useRepoData", () => {
 		});
 	});
 
-	describe("repo status", () => {
-		it("should fetch repo status when workerUrl is provided", async () => {
-			const mockStatus = {
-				github: {
-					totalPRs: 100,
-					firstPR: 1,
-					lastPR: 100,
-					oldestMerge: "2024-01-01",
-					newestMerge: "2024-12-31",
-				},
-				cache: {
-					cachedPRs: 80,
-					coveragePercent: 80,
-					ageSeconds: 3600,
-					lastPRNumber: 80,
-				},
-				recommendation: "ready" as const,
-			};
-
-			mockGetRepoStatus.mockResolvedValue(mockStatus);
-
-			const { result } = renderHook(() =>
-				useRepoData({
-					repoPath: "facebook/react",
-					workerUrl: "https://worker.example.com",
-					testMode: true,
-				}),
-			);
-
-			await waitFor(() => {
-				expect(result.current.repoStatus).toEqual(mockStatus);
-			});
-		});
-
-		it("should not fetch repo status when workerUrl is not provided", async () => {
-			renderHook(() =>
-				useRepoData({
-					repoPath: "facebook/react",
-					testMode: true,
-				}),
-			);
-
-			await waitFor(() => {
-				expect(mockGetRepoStatus).not.toHaveBeenCalled();
-			});
-		});
-
-		it("should handle repo status fetch errors gracefully", async () => {
-			mockGetRepoStatus.mockRejectedValue(new Error("Status error"));
-
-			const { result } = renderHook(() =>
-				useRepoData({
-					repoPath: "facebook/react",
-					workerUrl: "https://worker.example.com",
-					testMode: true,
-				}),
-			);
-
-			// Should not affect commit loading
-			await waitFor(() => {
-				expect(mockGetCommitHistory).toHaveBeenCalled();
-			});
-
-			expect(result.current.repoStatus).toBeNull();
-		});
-	});
+	// Note: Repo status tests removed - status banner feature was removed
+	// New /cache and /summary endpoints exist but are not yet integrated into the UI
 
 	describe("rate limit info", () => {
 		it("should update rate limit info on successful load", async () => {

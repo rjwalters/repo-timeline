@@ -161,46 +161,8 @@ export function useRepoData({
 
 	const gitServiceRef = useRef<GitService | null>(null);
 
-	// Fetch repo status when using worker (fast check)
-	useEffect(() => {
-		const fetchStatus = async () => {
-			console.log(
-				"fetchStatus called - workerUrl:",
-				workerUrl,
-				"repoPath:",
-				repoPath,
-			);
-			if (!workerUrl) {
-				console.warn("No workerUrl provided, skipping status fetch");
-				return;
-			}
-
-			try {
-				const gitService = new GitService(repoPath, undefined, workerUrl);
-				console.log("Fetching repo status for:", repoPath);
-				const status = await gitService.getRepoStatus();
-
-				console.log("Received repo status:", status);
-				if (status) {
-					dispatch({ type: "SET_REPO_STATUS", status });
-					console.log(
-						`Repository status: ${status.github.totalPRs} PRs, ${status.cache.cachedPRs} cached (${status.cache.coveragePercent}%) - ${status.recommendation}`,
-					);
-				} else {
-					console.warn("No repo status returned");
-				}
-			} catch (err) {
-				console.error("Error fetching repo status:", err);
-				console.error(
-					"Error details:",
-					err instanceof Error ? err.message : String(err),
-				);
-				// Non-blocking - continue without status
-			}
-		};
-
-		fetchStatus();
-	}, [repoPath, workerUrl]);
+	// Note: Status banner feature removed - use new /cache and /summary endpoints
+	// directly via GitHubApiService if needed in future
 
 	// Load metadata first to get time range
 	useEffect(() => {
