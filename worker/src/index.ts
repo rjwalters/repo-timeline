@@ -99,9 +99,18 @@ export default {
 		const [, owner, repo] = match;
 		const fullName = `${owner}/${repo}`;
 
+		// Check for force refresh parameter
+		const forceRefresh = url.searchParams.get("refresh") === "true";
+
 		try {
+			// Clear cache if force refresh requested
+			if (forceRefresh) {
+				console.log(`Force refresh requested for ${fullName}, clearing cache`);
+				await clearRepoCache(env.DB, fullName);
+			}
+
 			// Get cached data immediately
-			const cached = await getCachedData(env.DB, fullName);
+			const cached = forceRefresh ? null : await getCachedData(env.DB, fullName);
 
 			if (cached) {
 				console.log(
@@ -166,6 +175,42 @@ export default {
 		}
 	},
 };
+
+/**
+ * Clear cached data for a repo
+ */
+async function clearRepoCache(
+	db: D1Database,
+	fullName: string,
+): Promise<void> {
+	const repo = await db
+		.prepare("SELECT id FROM repos WHERE full_name = ?")
+		.bind(fullName)
+		.first();
+
+	if (!repo) {
+		return; // No cache to clear
+	}
+
+	// Delete all files for this repo's PRs
+	await db
+		.prepare(
+			`DELETE FROM pr_files WHERE pr_id IN (SELECT id FROM pull_requests WHERE repo_id = ?)`,
+		)
+		.bind(repo.id)
+		.run();
+
+	// Delete all PRs for this repo
+	await db
+		.prepare("DELETE FROM pull_requests WHERE repo_id = ?")
+		.bind(repo.id)
+		.run();
+
+	// Delete the repo record
+	await db.prepare("DELETE FROM repos WHERE id = ?").bind(repo.id).run();
+
+	console.log(`Cleared cache for ${fullName}`);
+}
 
 /**
  * Get cached data from D1
@@ -305,7 +350,7 @@ async function fetchMergedPRs(
 	owner: string,
 	repo: string,
 	sinceNumber?: number,
-	maxPages: number = 3, // Limit pages to avoid subrequest limit
+	maxPages: number = 10, // Fetch up to 1000 PRs (100 per page)
 ): Promise<any[]> {
 	const allPRs: any[] = [];
 	let page = 1;
@@ -347,7 +392,7 @@ async function fetchMergedPRs(
 			: mergedPRs;
 
 		// Limit total PRs to avoid subrequest limit (50 per worker invocation)
-		const prLimit = 40; // Leave room for other requests
+		const prLimit = 45; // Leave room for other requests (PR list + up to 45 file requests)
 		const prsToFetch =
 			allPRs.length + newPRs.length > prLimit
 				? newPRs.slice(0, prLimit - allPRs.length)
