@@ -121,29 +121,27 @@ export function RepoTimeline({
 					edges: [],
 				};
 
-	console.log("RepoTimeline repoStatus:", repoStatus);
+	console.log("RepoTimeline render - repoPath:", repoPath, "workerUrl:", workerUrl, "repoStatus:", repoStatus);
 
 	return (
-		<div className="w-full h-full relative">
-			{/* Repository Status Banner */}
-			{repoStatus && (
-				<div className="absolute bottom-0 left-0 right-0 z-10">
-					<RepoStatusBanner
-						github={repoStatus.github}
-						cache={repoStatus.cache}
-						recommendation={repoStatus.recommendation}
-					/>
-				</div>
-			)}
-
+		<div className="w-full h-full relative flex flex-col">
 			{/* 3D Visualization */}
-			<div className="w-full h-full">
+			<div className="flex-1 relative">
 				<RepoGraph3D
 					nodes={currentCommit.files}
 					edges={currentCommit.edges}
 					onNodeClick={handleNodeClick}
 				/>
 			</div>
+
+			{/* Repository Status Banner - above scrubber */}
+			{repoStatus && (
+				<RepoStatusBanner
+					github={repoStatus.github}
+					cache={repoStatus.cache}
+					recommendation={repoStatus.recommendation}
+				/>
+			)}
 
 			{/* Timeline Controls */}
 			{showControls && (

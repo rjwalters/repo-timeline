@@ -74,7 +74,7 @@ export function TimelineScrubber({
 	if (!currentCommit) return null;
 
 	return (
-		<div className="absolute bottom-0 left-0 right-0 bg-gray-900 bg-opacity-95 text-white p-4 border-t border-gray-700 backdrop-blur-sm">
+		<div className="w-full bg-gray-900 bg-opacity-95 text-white p-4 border-t border-gray-700 backdrop-blur-sm">
 			<div className="max-w-7xl mx-auto">
 				{/* Commit info */}
 				<CommitInfo
