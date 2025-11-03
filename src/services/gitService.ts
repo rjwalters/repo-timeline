@@ -20,6 +20,7 @@ export interface LoadProgress {
 	loaded: number;
 	total: number;
 	percentage: number;
+	message?: string;
 }
 
 export class GitService {
@@ -43,6 +44,7 @@ export class GitService {
 	async getCommitHistory(
 		onProgress?: (progress: LoadProgress) => void,
 		forceRefresh = false,
+		onCommit?: (commit: CommitData) => void,
 	): Promise<CommitData[]> {
 		const cacheKey = this.getCacheKey();
 
@@ -59,7 +61,7 @@ export class GitService {
 
 		// Fetch fresh data
 		try {
-			const commits = await this.fetchCommitsWithProgress(onProgress);
+			const commits = await this.fetchCommitsWithProgress(onProgress, onCommit);
 			// Save to cache
 			StorageService.saveCommits(cacheKey, commits);
 			return commits;
@@ -81,13 +83,23 @@ export class GitService {
 	 */
 	private async fetchCommitsWithProgress(
 		onProgress?: (progress: LoadProgress) => void,
+		onCommit?: (commit: CommitData) => void,
 	): Promise<CommitData[]> {
 		// Check if repoPath is in GitHub format (owner/repo)
 		if (/^[^/]+\/[^/]+$/.test(this.repoPath)) {
 			console.log(`Fetching from GitHub API: ${this.repoPath}`);
 			try {
 				const githubService = new GitHubApiService(this.repoPath);
-				const commits = await githubService.buildTimelineFromPRs(onProgress);
+				const commits = await githubService.buildTimelineFromPRsIncremental(
+					onCommit
+						? (commit) => {
+								// Apply size change calculations incrementally
+								const calculated = this.calculateSizeChanges([commit]);
+								onCommit(calculated[0]);
+							}
+						: undefined,
+					onProgress,
+				);
 				return this.calculateSizeChanges(commits);
 			} catch (error) {
 				console.error("GitHub API error:", error);

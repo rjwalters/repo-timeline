@@ -164,9 +164,11 @@ export class GitHubApiService {
 	}
 
 	/**
-	 * Build commit timeline from PRs
+	 * Build commit timeline from PRs incrementally
+	 * Calls onCommit callback for each PR processed, allowing progressive rendering
 	 */
-	async buildTimelineFromPRs(
+	async buildTimelineFromPRsIncremental(
+		onCommit?: (commit: CommitData) => void,
 		onProgress?: (progress: LoadProgress) => void,
 	): Promise<CommitData[]> {
 		// Fetch all merged PRs
@@ -233,14 +235,21 @@ export class GitHubApiService {
 				type: path.includes("/") ? ("file" as const) : ("file" as const), // Simplified for now
 			}));
 
-			commits.push({
+			const commit: CommitData = {
 				hash: `pr-${pr.number}`,
 				message: pr.title,
 				author: pr.user.login,
 				date: new Date(pr.merged_at || Date.now()),
 				files,
 				edges: [], // We'll build edges if needed
-			});
+			};
+
+			commits.push(commit);
+
+			// Call onCommit callback for incremental updates
+			if (onCommit) {
+				onCommit(commit);
+			}
 
 			// Throttle between PRs
 			if (i < prs.length - 1) {
@@ -249,5 +258,14 @@ export class GitHubApiService {
 		}
 
 		return commits;
+	}
+
+	/**
+	 * Build commit timeline from PRs (non-incremental version for backward compatibility)
+	 */
+	async buildTimelineFromPRs(
+		onProgress?: (progress: LoadProgress) => void,
+	): Promise<CommitData[]> {
+		return this.buildTimelineFromPRsIncremental(undefined, onProgress);
 	}
 }

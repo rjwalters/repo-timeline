@@ -1,10 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-interface RepoInputProps {
-	onSubmit: (repoPath: string) => void;
-}
-
-export function RepoInput({ onSubmit }: RepoInputProps) {
+export function RepoInput() {
+	const navigate = useNavigate();
 	const [input, setInput] = useState("");
 	const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +31,8 @@ export function RepoInput({ onSubmit }: RepoInputProps) {
 			return;
 		}
 
-		onSubmit(repoPath);
+		// Navigate to the repo route
+		navigate(`/${repoPath}`);
 	};
 
 	return (

@@ -1,19 +1,19 @@
-import { useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { RepoInput } from "./components/RepoInput";
-import { RepoTimeline } from "./components/RepoTimeline";
+import { RepoWrapper } from "./components/RepoWrapper";
 import "./index.css";
 
 function App() {
-	const [repoPath, setRepoPath] = useState<string | null>(null);
-
 	return (
-		<div className="w-screen h-screen">
-			{repoPath ? (
-				<RepoTimeline repoPath={repoPath} onBack={() => setRepoPath(null)} />
-			) : (
-				<RepoInput onSubmit={setRepoPath} />
-			)}
-		</div>
+		<BrowserRouter basename="/repo-timeline">
+			<div className="w-screen h-screen">
+				<Routes>
+					<Route path="/" element={<RepoInput />} />
+					<Route path="/:owner/:repo" element={<RepoWrapper />} />
+					<Route path="*" element={<Navigate to="/" replace />} />
+				</Routes>
+			</div>
+		</BrowserRouter>
 	);
 }
 

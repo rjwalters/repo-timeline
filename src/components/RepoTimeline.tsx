@@ -1,4 +1,4 @@
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GitService, LoadProgress } from "../services/gitService";
 import { CommitData, FileNode } from "../types";
@@ -18,6 +18,7 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 	const [commits, setCommits] = useState<CommitData[]>([]);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [loading, setLoading] = useState(true);
+	const [backgroundLoading, setBackgroundLoading] = useState(false);
 	const [loadProgress, setLoadProgress] = useState<LoadProgress | null>(null);
 	const [selectedNode, setSelectedNode] = useState<FileNode | null>(null);
 	const [isPlaying, setIsPlaying] = useState(false);
@@ -30,27 +31,55 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 
 	const loadCommits = useCallback(
 		async (forceRefresh = false) => {
-			setLoading(true);
-			setLoadProgress(null);
-			try {
-				const gitService = new GitService(repoPath);
-				gitServiceRef.current = gitService;
+			const gitService = new GitService(repoPath);
+			gitServiceRef.current = gitService;
 
-				const commitsData = await gitService.getCommitHistory((progress) => {
-					setLoadProgress(progress);
-				}, forceRefresh);
+			// Check if data was from cache
+			const cacheInfo = gitService.getCacheInfo();
+			const hasCache = cacheInfo.exists && !forceRefresh;
 
-				setCommits(commitsData);
-				setCurrentIndex(0);
-
-				// Check if data was from cache
-				const cacheInfo = gitService.getCacheInfo();
-				setFromCache(cacheInfo.exists && !forceRefresh);
-			} catch (error) {
-				console.error("Error loading commits:", error);
-			} finally {
-				setLoading(false);
+			if (hasCache) {
+				// Load from cache immediately - no loading state
+				setLoading(true);
 				setLoadProgress(null);
+				try {
+					const commitsData = await gitService.getCommitHistory((progress) => {
+						setLoadProgress(progress);
+					}, forceRefresh);
+					setCommits(commitsData);
+					setCurrentIndex(0);
+					setFromCache(true);
+					setLoading(false);
+				} catch (error) {
+					console.error("Error loading commits:", error);
+					setLoading(false);
+				}
+			} else {
+				// Incremental loading - show visualization as data arrives
+				setLoading(false);
+				setBackgroundLoading(true);
+				setLoadProgress(null);
+				setCommits([]);
+				setCurrentIndex(0);
+				setFromCache(false);
+
+				try {
+					await gitService.getCommitHistory(
+						(progress) => {
+							setLoadProgress(progress);
+						},
+						forceRefresh,
+						(commit) => {
+							// Add commit incrementally
+							setCommits((prev) => [...prev, commit]);
+						},
+					);
+				} catch (error) {
+					console.error("Error loading commits:", error);
+				} finally {
+					setBackgroundLoading(false);
+					setLoadProgress(null);
+				}
 			}
 		},
 		[repoPath],
@@ -137,7 +166,8 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 		);
 	}
 
-	if (commits.length === 0) {
+	// Show initial loading only if we have no data yet
+	if (commits.length === 0 && !backgroundLoading) {
 		return (
 			<div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
 				<div className="text-center">
@@ -150,7 +180,18 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 		);
 	}
 
-	const currentCommit = commits[currentIndex];
+	// Show empty state while waiting for first commit
+	const currentCommit =
+		commits.length > 0
+			? commits[currentIndex]
+			: {
+					hash: "",
+					message: "Loading...",
+					author: "",
+					date: new Date(),
+					files: [],
+					edges: [],
+				};
 
 	return (
 		<div className="w-full h-full relative">
@@ -207,9 +248,16 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 					<div>
 						<h1 className="text-xl font-bold mb-1">Repo Timeline Visualizer</h1>
 						<div className="text-sm text-gray-400">{repoPath}</div>
-						{fromCache && (
+						{fromCache && !backgroundLoading && (
 							<div className="text-xs text-blue-400 mt-1">
 								📦 Loaded from cache
+							</div>
+						)}
+						{backgroundLoading && loadProgress && (
+							<div className="text-xs text-yellow-400 mt-1 flex items-center gap-2">
+								<Loader2 size={12} className="animate-spin" />
+								{loadProgress.message || "Loading PRs..."} ({commits.length}{" "}
+								loaded)
 							</div>
 						)}
 					</div>
