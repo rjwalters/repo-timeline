@@ -1,10 +1,9 @@
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { usePlaybackTimer } from "../hooks/usePlaybackTimer";
+import { useRepoData } from "../hooks/useRepoData";
 import type { RepoTimelineProps } from "../lib/types";
-import type { RateLimitInfo } from "../services/githubApiService";
-import { GitService, LoadProgress } from "../services/gitService";
-import { CommitData, FileEdge, FileNode } from "../types";
+import { FileEdge, FileNode } from "../types";
 import { getCurrentIndex } from "../utils/timelineHelpers";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
@@ -30,28 +29,35 @@ export function RepoTimeline({
 	playbackDirection: initialPlaybackDirection = "forward",
 	onError,
 }: RepoTimelineProps) {
-	const [commits, setCommits] = useState<CommitData[]>([]);
-	const [currentTime, setCurrentTime] = useState<number>(0); // Timestamp in ms
-	const [timeRange, setTimeRange] = useState<{ start: number; end: number }>({
-		start: 0,
-		end: Date.now(),
+	// Data loading state managed by custom hook
+	const {
+		commits,
+		currentTime,
+		setCurrentTime,
+		timeRange,
+		loading,
+		backgroundLoading,
+		loadProgress,
+		error,
+		rateLimit,
+		fromCache,
+		rateLimitedCache,
+		loadCommits,
+	} = useRepoData({
+		repoPath,
+		workerUrl,
+		testMode: TEST_MODE,
+		onError,
 	});
-	const [_totalPRs, setTotalPRs] = useState<number>(0);
-	const [loading, setLoading] = useState(TEST_MODE ? false : true);
-	const [backgroundLoading, setBackgroundLoading] = useState(false);
-	const [loadProgress, setLoadProgress] = useState<LoadProgress | null>(null);
-	const [error, setError] = useState<string | null>(null);
+
+	// UI state
 	const [selectedNode, setSelectedNode] = useState<FileNode | null>(null);
-	const [rateLimit, setRateLimit] = useState<RateLimitInfo | null>(null);
 	const [isPlaying, setIsPlaying] = useState(autoPlay);
 	const [playbackSpeed, setPlaybackSpeed] =
 		useState<PlaybackSpeed>(initialPlaybackSpeed);
 	const [playbackDirection, setPlaybackDirection] = useState<PlaybackDirection>(
 		initialPlaybackDirection,
 	);
-	const [fromCache, setFromCache] = useState(false);
-	const [rateLimitedCache, setRateLimitedCache] = useState(false);
-	const gitServiceRef = useRef<GitService | null>(null);
 
 	const currentIndex = getCurrentIndex(commits, currentTime);
 
@@ -65,139 +71,6 @@ export function RepoTimeline({
 		onTimeChange: setCurrentTime,
 		onPlayingChange: setIsPlaying,
 	});
-
-	// Load metadata first to get time range
-	useEffect(() => {
-		const loadMetadata = async () => {
-			try {
-				const gitService = new GitService(repoPath, undefined, workerUrl);
-				const metadata = await gitService.getMetadata();
-
-				setTotalPRs(metadata.prs.length);
-				setTimeRange(metadata.timeRange);
-				setCurrentTime(metadata.timeRange.start);
-
-				console.log(
-					`Loaded metadata: ${metadata.prs.length} PRs, time range: ${new Date(metadata.timeRange.start).toLocaleDateString()} - ${new Date(metadata.timeRange.end).toLocaleDateString()}`,
-				);
-			} catch (err) {
-				console.error("Error loading metadata:", err);
-				// Don't block - continue to load commits
-			}
-		};
-
-		loadMetadata();
-	}, [repoPath, workerUrl]);
-
-	const loadCommits = useCallback(
-		async (forceRefresh = false) => {
-			const gitService = new GitService(
-				repoPath,
-				undefined, // No token needed - using worker
-				workerUrl,
-			);
-			gitServiceRef.current = gitService;
-
-			// Check if data was from cache
-			const cacheInfo = gitService.getCacheInfo();
-			const hasCache = cacheInfo.exists && !forceRefresh;
-
-			if (hasCache) {
-				// Load from cache immediately - no loading state
-				setLoading(true);
-				setLoadProgress(null);
-				try {
-					const commitsData = await gitService.getCommitHistory((progress) => {
-						setLoadProgress(progress);
-					}, forceRefresh);
-					setCommits(commitsData);
-					// currentTime is already set from metadata
-					setFromCache(true);
-					setRateLimitedCache(false); // Clear rate limit flag when loading normally
-					setLoading(false);
-					setError(null);
-					setRateLimit(gitService.getRateLimitInfo());
-				} catch (err) {
-					console.error("Error loading commits:", err);
-					const error =
-						err instanceof Error ? err : new Error("Failed to load repository");
-					setError(error.message);
-					setLoading(false);
-					setRateLimitedCache(false);
-					setRateLimit(gitService.getRateLimitInfo());
-					if (onError) {
-						onError(error);
-					}
-				}
-			} else {
-				// Incremental loading - show visualization as data arrives
-				setLoading(false);
-				setBackgroundLoading(true);
-				setLoadProgress(null);
-				setCommits([]);
-				// currentTime is already set from metadata
-				setFromCache(false);
-
-				try {
-					await gitService.getCommitHistory(
-						(progress) => {
-							setLoadProgress(progress);
-						},
-						forceRefresh,
-						(commit) => {
-							// Add commit incrementally
-							setCommits((prev) => [...prev, commit]);
-						},
-					);
-				} catch (err) {
-					console.error("Error loading commits:", err);
-
-					// If we hit an error (like rate limiting), try to load from cache
-					if (cacheInfo.exists) {
-						console.log("Falling back to cached data due to error");
-						try {
-							const cachedCommits = await gitService.getCommitHistory(
-								undefined, // no progress updates needed
-								false, // don't force refresh
-							);
-							setCommits(cachedCommits);
-							setFromCache(true);
-							setRateLimitedCache(true); // Mark that we're using stale cache due to rate limit
-							setError(null); // Clear error since we have cached data
-							// Show a warning instead of error
-							console.warn(
-								"Using cached data due to API error:",
-								err instanceof Error ? err.message : "Unknown error",
-							);
-						} catch (_cacheErr) {
-							// If cache also fails, show the original error
-							setError(
-								err instanceof Error
-									? err.message
-									: "Failed to load repository",
-							);
-							setRateLimitedCache(false);
-						}
-					} else {
-						// No cache available, show error
-						setError(
-							err instanceof Error ? err.message : "Failed to load repository",
-						);
-						setRateLimitedCache(false);
-					}
-					setRateLimit(gitService.getRateLimitInfo());
-				} finally {
-					setBackgroundLoading(false);
-					setLoadProgress(null);
-				}
-			}
-		},
-		[repoPath, workerUrl, onError],
-	);
-
-	useEffect(() => {
-		loadCommits();
-	}, [loadCommits]);
 
 	const handlePlayPause = () => {
 		setIsPlaying(!isPlaying);
