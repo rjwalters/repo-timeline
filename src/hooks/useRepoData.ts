@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { GitService, type LoadProgress, type RateLimitInfo } from "../services/gitService";
+import {
+	GitService,
+	type LoadProgress,
+	type RateLimitInfo,
+} from "../services/gitService";
 import type { CommitData } from "../types";
 
 interface RepoDataState {
@@ -254,9 +258,14 @@ export function useRepoData({
 	return {
 		...state,
 		loadCommits,
-		setCurrentTime: (timeOrUpdater: number | ((prevTime: number) => number)) => {
+		setCurrentTime: (
+			timeOrUpdater: number | ((prevTime: number) => number),
+		) => {
 			if (typeof timeOrUpdater === "function") {
-				dispatch({ type: "SET_CURRENT_TIME", time: timeOrUpdater(state.currentTime) });
+				dispatch({
+					type: "SET_CURRENT_TIME",
+					time: timeOrUpdater(state.currentTime),
+				});
 			} else {
 				dispatch({ type: "SET_CURRENT_TIME", time: timeOrUpdater });
 			}
