@@ -14,8 +14,10 @@ interface RepoGraph3DProps {
 
 export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 	const [simulationNodes, setSimulationNodes] = useState<FileNode[]>(nodes);
+	const [contextLost, setContextLost] = useState(false);
 	const simulationRef = useRef<ForceSimulation | null>(null);
 	const animationFrameRef = useRef<number>();
+	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
 	useEffect(() => {
 		// Create a deep copy of nodes to avoid mutating props
@@ -70,12 +72,87 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 		};
 	}, [nodes, edges]);
 
+	// Handle WebGL context loss/restore
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const handleContextLost = (event: Event) => {
+			event.preventDefault();
+			console.warn("WebGL context lost, attempting recovery...");
+			setContextLost(true);
+		};
+
+		const handleContextRestored = () => {
+			console.log("WebGL context restored");
+			setContextLost(false);
+		};
+
+		canvas.addEventListener("webglcontextlost", handleContextLost);
+		canvas.addEventListener("webglcontextrestored", handleContextRestored);
+
+		return () => {
+			canvas.removeEventListener("webglcontextlost", handleContextLost);
+			canvas.removeEventListener("webglcontextrestored", handleContextRestored);
+		};
+	}, []);
+
 	const nodeMap = new Map(simulationNodes.map((n) => [n.id, n]));
+
+	if (contextLost) {
+		return (
+			<div
+				style={{
+					width: "100%",
+					height: "100%",
+					background: "#0f172a",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					color: "#94a3b8",
+				}}
+			>
+				<div style={{ textAlign: "center" }}>
+					<div style={{ fontSize: "1.2rem", marginBottom: "0.5rem" }}>
+						⚠️ WebGL Context Lost
+					</div>
+					<div style={{ fontSize: "0.9rem" }}>
+						The 3D visualization is recovering...
+					</div>
+					<button
+						onClick={() => window.location.reload()}
+						style={{
+							marginTop: "1rem",
+							padding: "0.5rem 1rem",
+							background: "#3b82f6",
+							color: "white",
+							border: "none",
+							borderRadius: "0.375rem",
+							cursor: "pointer",
+						}}
+					>
+						Reload Page
+					</button>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<Canvas
+			ref={(canvas) => {
+				if (canvas) {
+					canvasRef.current = canvas as unknown as HTMLCanvasElement;
+				}
+			}}
 			camera={{ position: [0, 0, 200], fov: 75 }}
 			style={{ background: "#0f172a" }}
+			gl={{
+				powerPreference: "high-performance",
+				antialias: true,
+				alpha: false,
+				preserveDrawingBuffer: false,
+			}}
 		>
 			<ambientLight intensity={0.5} />
 			<pointLight position={[100, 100, 100]} intensity={1} />
