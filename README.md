@@ -1,5 +1,8 @@
 # Repo Timeline Visualizer
 
+[![Test & Coverage](https://github.com/rjwalters/repo-timeline/actions/workflows/test.yml/badge.svg)](https://github.com/rjwalters/repo-timeline/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/rjwalters/repo-timeline/branch/main/graph/badge.svg)](https://codecov.io/gh/rjwalters/repo-timeline)
+
 A 3D visualization tool for exploring Git repository evolution over time. Watch your codebase grow, change, and evolve with an interactive force-directed graph showing files and directories as connected nodes in 3D space.
 
 🌐 **[Live Demo](https://rjwalters.github.io/repo-timeline/)**
@@ -77,6 +80,7 @@ The site will be available at `https://[username].github.io/repo-timeline/`
 - **React Three Fiber**: React renderer for Three.js
 - **React Three Drei**: Useful helpers for R3F
 - **Tailwind CSS**: Utility-first styling
+- **Vitest**: Fast unit testing with coverage
 - **Biome**: Fast linter and formatter
 - **pnpm**: Efficient package manager
 
@@ -106,6 +110,14 @@ Open your browser to `http://localhost:5173`
 ```bash
 pnpm build        # Build library for npm
 pnpm build:demo   # Build demo app for GitHub Pages
+```
+
+### Test
+
+```bash
+pnpm test              # Run tests in watch mode
+pnpm test:coverage     # Run tests with coverage report
+pnpm test:ui           # Run tests with interactive UI
 ```
 
 ### Lint

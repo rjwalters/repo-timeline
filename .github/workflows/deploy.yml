@@ -42,6 +42,9 @@ jobs:
       - name: Run Biome lint
         run: pnpm lint
 
+      - name: Run tests
+        run: pnpm test:coverage
+
       - name: Build Demo
         run: pnpm build:demo
 

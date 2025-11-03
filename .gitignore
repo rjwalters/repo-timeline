@@ -32,3 +32,6 @@ dist-ssr
 .env.*.local
 worker/.env
 worker/.dev.vars
+
+# Test coverage
+coverage
