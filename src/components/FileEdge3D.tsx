@@ -29,8 +29,8 @@ export function FileEdge3D({ edge, nodes }: FileEdge3DProps) {
 		<Line
 			points={points}
 			color={color}
-			lineWidth={1}
-			opacity={0.6}
+			lineWidth={3}
+			opacity={0.8}
 			transparent
 		/>
 	);

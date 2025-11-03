@@ -18,8 +18,8 @@ export function FileNode3D({ node, onClick }: FileNode3DProps) {
 
 	// Calculate target radius based on LOG of file size
 	const targetRadius = Math.max(
-		0.5,
-		Math.min(5, Math.log10(node.size + 1) * 1.2),
+		2.0,
+		Math.min(15, Math.log10(node.size + 1) * 4),
 	);
 
 	// Initialize animated radius
@@ -30,8 +30,8 @@ export function FileNode3D({ node, onClick }: FileNode3DProps) {
 		} else if (node.fileStatus === "deleted") {
 			// Deleted files start at previous size
 			const prevRadius = Math.max(
-				0.5,
-				Math.min(5, Math.log10((node.previousSize || 100) + 1) * 1.2),
+				2.0,
+				Math.min(15, Math.log10((node.previousSize || 100) + 1) * 4),
 			);
 			setAnimatedRadius(prevRadius);
 			deletionStartTime.current = Date.now();
@@ -88,8 +88,8 @@ export function FileNode3D({ node, onClick }: FileNode3DProps) {
 
 			if (elapsed < shrinkDuration) {
 				const prevRadius = Math.max(
-					0.5,
-					Math.min(5, Math.log10((node.previousSize || 100) + 1) * 1.2),
+					2.0,
+					Math.min(15, Math.log10((node.previousSize || 100) + 1) * 4),
 				);
 				setAnimatedRadius(prevRadius * (1 - elapsed / shrinkDuration));
 			} else {
