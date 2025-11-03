@@ -43,17 +43,30 @@ npm run db:migrate:local
 npm run db:migrate
 ```
 
-### 4. Set GitHub Token
+### 4. Set GitHub Token(s)
 
 Create a GitHub Personal Access Token with `public_repo` scope:
 https://github.com/settings/tokens/new?scopes=public_repo&description=Repo%20Timeline%20Worker
 
 Then set it as a secret:
 
+**Single token:**
 ```bash
-npx wrangler secret put GITHUB_TOKEN
-# Paste your token when prompted
+npx wrangler secret put GITHUB_TOKENS
+# Paste: ghp_yourtoken
 ```
+
+**Multiple tokens (load balancing):**
+```bash
+npx wrangler secret put GITHUB_TOKENS
+# Paste: ghp_token1,ghp_token2,ghp_token3
+```
+
+The worker will round-robin through multiple tokens, giving you:
+- 1 token = 5,000 req/hour
+- 2 tokens = 10,000 req/hour
+- 3 tokens = 15,000 req/hour
+- etc.
 
 ### 5. Deploy
 
@@ -115,7 +128,13 @@ curl https://repo-timeline-api.your-subdomain.workers.dev/api/repo/facebook/reac
 GET /health
 ```
 
-Returns: `{"status":"ok"}`
+Returns:
+```json
+{
+  "status": "ok",
+  "tokens": 3  // Number of tokens configured
+}
+```
 
 ## Database Schema
 

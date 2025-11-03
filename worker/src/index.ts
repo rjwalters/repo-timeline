@@ -6,7 +6,31 @@
 
 interface Env {
 	DB: D1Database;
-	GITHUB_TOKEN: string;
+	GITHUB_TOKENS: string; // Comma-separated list of tokens
+}
+
+// Token rotation state (persisted in D1)
+class TokenRotator {
+	private tokens: string[];
+	private currentIndex = 0;
+
+	constructor(tokensString: string) {
+		this.tokens = tokensString.split(',').map(t => t.trim()).filter(t => t.length > 0);
+		if (this.tokens.length === 0) {
+			throw new Error('No GitHub tokens configured');
+		}
+		console.log(`Initialized with ${this.tokens.length} GitHub token(s)`);
+	}
+
+	getNextToken(): string {
+		const token = this.tokens[this.currentIndex];
+		this.currentIndex = (this.currentIndex + 1) % this.tokens.length;
+		return token;
+	}
+
+	getTokenCount(): number {
+		return this.tokens.length;
+	}
 }
 
 interface PRFile {
@@ -40,9 +64,15 @@ export default {
 
 		const url = new URL(request.url);
 
+		// Initialize token rotator
+		const tokenRotator = new TokenRotator(env.GITHUB_TOKENS);
+
 		// Health check endpoint
 		if (url.pathname === '/health') {
-			return new Response(JSON.stringify({ status: 'ok' }), {
+			return new Response(JSON.stringify({
+				status: 'ok',
+				tokens: tokenRotator.getTokenCount(),
+			}), {
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 			});
 		}
@@ -70,7 +100,7 @@ export default {
 				const cacheAge = Date.now() / 1000 - cached.lastUpdated;
 				if (cacheAge > 3600) {
 					console.log(`Cache is ${Math.round(cacheAge / 60)} minutes old, triggering background update`);
-					ctx.waitUntil(updateRepoData(env.DB, env.GITHUB_TOKEN, owner, repo, cached.lastPrNumber));
+					ctx.waitUntil(updateRepoData(env.DB, tokenRotator.getNextToken(), owner, repo, cached.lastPrNumber));
 				}
 
 				return new Response(JSON.stringify(cached.prs), {
@@ -85,7 +115,7 @@ export default {
 
 			// No cache - fetch synchronously for first request
 			console.log(`No cache for ${fullName}, fetching from GitHub`);
-			const prs = await fetchAndCacheRepo(env.DB, env.GITHUB_TOKEN, owner, repo);
+			const prs = await fetchAndCacheRepo(env.DB, tokenRotator.getNextToken(), owner, repo);
 
 			return new Response(JSON.stringify(prs), {
 				headers: {

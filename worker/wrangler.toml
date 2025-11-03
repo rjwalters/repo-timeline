@@ -8,8 +8,9 @@ binding = "DB"
 database_name = "repo_timeline"
 database_id = "" # Will be filled after creating the database
 
-# Secrets (set with: wrangler secret put GITHUB_TOKEN)
-# GITHUB_TOKEN = "your-github-pat"
+# Secrets (set with: wrangler secret put GITHUB_TOKENS)
+# GITHUB_TOKENS = "token1,token2,token3"  # Comma-separated for load balancing
+# Or single token: "ghp_yourtoken"
 
 [env.production]
 # Production-specific settings can go here

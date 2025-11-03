@@ -57,16 +57,27 @@ database_id = "paste-your-id-here"  # <-- Update this line
 npx wrangler d1 migrations apply repo_timeline --remote
 ```
 
-### 5. Set GitHub Token Secret
+### 5. Set GitHub Token Secret(s)
 
 Create a token at: https://github.com/settings/tokens/new?scopes=public_repo
 
-Then set it:
-
+**For single token:**
 ```bash
-npx wrangler secret put GITHUB_TOKEN
-# Paste your token when prompted
+npx wrangler secret put GITHUB_TOKENS
+# Paste your token: ghp_yourtoken
 ```
+
+**For multiple tokens (recommended for load balancing):**
+```bash
+npx wrangler secret put GITHUB_TOKENS
+# Paste comma-separated: ghp_token1,ghp_token2,ghp_token3
+```
+
+**Benefits of multiple tokens:**
+- 1 token = 5,000 requests/hour
+- 2 tokens = 10,000 requests/hour
+- 3 tokens = 15,000 requests/hour
+- Automatic round-robin load balancing
 
 ### 6. Deploy Worker
 
