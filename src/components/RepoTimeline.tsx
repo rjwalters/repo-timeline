@@ -1,5 +1,6 @@
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { TEST_MODE } from "../config";
 import { usePlaybackTimer } from "../hooks/usePlaybackTimer";
 import { useRepoData } from "../hooks/useRepoData";
 import type { RepoTimelineProps } from "../lib/types";
@@ -15,9 +16,6 @@ import {
 	PlaybackSpeed,
 	TimelineScrubber,
 } from "./TimelineScrubber";
-
-// TEST MODE: Set to true to bypass loading and show test scene
-const TEST_MODE = false;
 
 export function RepoTimeline({
 	repoPath,
