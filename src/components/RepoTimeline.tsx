@@ -279,8 +279,8 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 		);
 	}
 
-	// Show initial loading only if we have no data yet
-	if (commits.length === 0 && !backgroundLoading) {
+	// Show initial loading only if we have no data yet and no error
+	if (commits.length === 0 && !backgroundLoading && !error) {
 		return (
 			<div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
 				<div className="text-center">
