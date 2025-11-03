@@ -21,7 +21,7 @@ interface RepoTimelineProps {
 
 export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 	const [commits, setCommits] = useState<CommitData[]>([]);
-	const [currentIndex, setCurrentIndex] = useState(0);
+	const [currentTime, setCurrentTime] = useState<number>(0); // Timestamp in ms
 	const [loading, setLoading] = useState(true);
 	const [backgroundLoading, setBackgroundLoading] = useState(false);
 	const [loadProgress, setLoadProgress] = useState<LoadProgress | null>(null);
@@ -36,6 +36,29 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 	const [rateLimitedCache, setRateLimitedCache] = useState(false);
 	const playbackTimerRef = useRef<number | null>(null);
 	const gitServiceRef = useRef<GitService | null>(null);
+
+	// Get time bounds from commits
+	const timeRange = {
+		start: commits.length > 0 ? commits[0].date.getTime() : 0,
+		end:
+			commits.length > 0
+				? commits[commits.length - 1].date.getTime()
+				: Date.now(),
+	};
+
+	// Find current commit index based on current time
+	const getCurrentIndex = (time: number): number => {
+		if (commits.length === 0) return 0;
+		// Find the latest commit that is <= current time
+		for (let i = commits.length - 1; i >= 0; i--) {
+			if (commits[i].date.getTime() <= time) {
+				return i;
+			}
+		}
+		return 0;
+	};
+
+	const currentIndex = getCurrentIndex(currentTime);
 
 	const loadCommits = useCallback(
 		async (forceRefresh = false) => {
@@ -59,7 +82,10 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 						setLoadProgress(progress);
 					}, forceRefresh);
 					setCommits(commitsData);
-					setCurrentIndex(0);
+					// Initialize to first commit's time
+					if (commitsData.length > 0) {
+						setCurrentTime(commitsData[0].date.getTime());
+					}
 					setFromCache(true);
 					setRateLimitedCache(false); // Clear rate limit flag when loading normally
 					setLoading(false);
@@ -80,7 +106,7 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 				setBackgroundLoading(true);
 				setLoadProgress(null);
 				setCommits([]);
-				setCurrentIndex(0);
+				setCurrentTime(0);
 				setFromCache(false);
 
 				try {
@@ -147,32 +173,39 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 	// Playback auto-advance effect
 	useEffect(() => {
 		if (isPlaying && commits.length > 0) {
-			// Base interval is 1 second, adjusted by playback speed
-			const interval = 1000 / playbackSpeed;
+			// Update every 100ms for smooth playback
+			const updateInterval = 100;
+			// Time increment per update (in ms of repo time)
+			// At 1x: advance 1 day per second = 86400000ms / 1000ms = 86400ms per update
+			// At higher speeds, multiply accordingly
+			const totalRepoTimeMs = timeRange.end - timeRange.start;
+			// Let's say 1x speed = entire timeline in 60 seconds
+			const timeIncrement =
+				(totalRepoTimeMs / 60000) * updateInterval * playbackSpeed;
 
 			playbackTimerRef.current = setInterval(() => {
-				setCurrentIndex((prevIndex) => {
-					let nextIndex: number;
+				setCurrentTime((prevTime) => {
+					let nextTime: number;
 
 					if (playbackDirection === "forward") {
-						nextIndex = prevIndex + 1;
-						if (nextIndex >= commits.length) {
+						nextTime = prevTime + timeIncrement;
+						if (nextTime >= timeRange.end) {
 							// Stop at end
 							setIsPlaying(false);
-							return commits.length - 1;
+							return timeRange.end;
 						}
 					} else {
-						nextIndex = prevIndex - 1;
-						if (nextIndex < 0) {
+						nextTime = prevTime - timeIncrement;
+						if (nextTime <= timeRange.start) {
 							// Stop at beginning
 							setIsPlaying(false);
-							return 0;
+							return timeRange.start;
 						}
 					}
 
-					return nextIndex;
+					return nextTime;
 				});
-			}, interval);
+			}, updateInterval);
 
 			return () => {
 				if (playbackTimerRef.current) {
@@ -180,7 +213,14 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 				}
 			};
 		}
-	}, [isPlaying, playbackSpeed, playbackDirection, commits.length]);
+	}, [
+		isPlaying,
+		playbackSpeed,
+		playbackDirection,
+		commits.length,
+		timeRange.start,
+		timeRange.end,
+	]);
 
 	const handlePlayPause = () => {
 		setIsPlaying(!isPlaying);
@@ -309,8 +349,9 @@ export function RepoTimeline({ repoPath, onBack }: RepoTimelineProps) {
 			{/* Timeline Controls */}
 			<TimelineScrubber
 				commits={commits}
-				currentIndex={currentIndex}
-				onIndexChange={setCurrentIndex}
+				currentTime={currentTime}
+				onTimeChange={setCurrentTime}
+				timeRange={timeRange}
 				isPlaying={isPlaying}
 				onPlayPause={handlePlayPause}
 				playbackSpeed={playbackSpeed}

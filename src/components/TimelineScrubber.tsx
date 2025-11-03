@@ -13,8 +13,9 @@ export type PlaybackDirection = "forward" | "reverse";
 
 interface TimelineScrubberProps {
 	commits: CommitData[];
-	currentIndex: number;
-	onIndexChange: (index: number) => void;
+	currentTime: number; // Current timestamp in ms
+	onTimeChange: (time: number) => void;
+	timeRange: { start: number; end: number }; // Time range in ms
 	isPlaying: boolean;
 	onPlayPause: () => void;
 	playbackSpeed: PlaybackSpeed;
@@ -25,8 +26,9 @@ interface TimelineScrubberProps {
 
 export function TimelineScrubber({
 	commits,
-	currentIndex,
-	onIndexChange,
+	currentTime,
+	onTimeChange,
+	timeRange,
 	isPlaying,
 	onPlayPause,
 	playbackSpeed,
@@ -34,28 +36,46 @@ export function TimelineScrubber({
 	playbackDirection,
 	onDirectionChange,
 }: TimelineScrubberProps) {
+	// Find current commit index based on current time
+	const getCurrentIndex = (time: number): number => {
+		if (commits.length === 0) return 0;
+		// Find the latest commit that is <= current time
+		for (let i = commits.length - 1; i >= 0; i--) {
+			if (commits[i].date.getTime() <= time) {
+				return i;
+			}
+		}
+		return 0;
+	};
+
+	const currentIndex = getCurrentIndex(currentTime);
+
 	const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		onIndexChange(parseInt(e.target.value));
+		// Convert slider value (0-100) to timestamp
+		const percentage = Number.parseFloat(e.target.value);
+		const newTime =
+			timeRange.start + (timeRange.end - timeRange.start) * (percentage / 100);
+		onTimeChange(newTime);
 	};
 
 	const handlePrevious = () => {
 		if (currentIndex > 0) {
-			onIndexChange(currentIndex - 1);
+			onTimeChange(commits[currentIndex - 1].date.getTime());
 		}
 	};
 
 	const handleNext = () => {
 		if (currentIndex < commits.length - 1) {
-			onIndexChange(currentIndex + 1);
+			onTimeChange(commits[currentIndex + 1].date.getTime());
 		}
 	};
 
 	const handleSkipToStart = () => {
-		onIndexChange(0);
+		onTimeChange(timeRange.start);
 	};
 
 	const handleSkipToEnd = () => {
-		onIndexChange(commits.length - 1);
+		onTimeChange(timeRange.end);
 	};
 
 	const cycleSpeed = () => {
@@ -93,17 +113,18 @@ export function TimelineScrubber({
 								{currentCommit.date.toLocaleDateString()}
 							</div>
 						</div>
-						{/* Date/Time Clock */}
+						{/* Date/Time Clock - shows current time in timeline */}
 						{isPlaying && (
 							<div className="text-lg font-mono text-blue-400 tabular-nums">
-								{currentCommit.date.toLocaleDateString("en-US", {
+								{new Date(currentTime).toLocaleDateString("en-US", {
 									month: "short",
 									day: "numeric",
 									year: "numeric",
 								})}{" "}
-								{currentCommit.date.toLocaleTimeString("en-US", {
+								{new Date(currentTime).toLocaleTimeString("en-US", {
 									hour: "2-digit",
 									minute: "2-digit",
+									second: "2-digit",
 								})}
 							</div>
 						)}
@@ -185,10 +206,13 @@ export function TimelineScrubber({
 					{/* Slider with PR markers */}
 					<div className="flex-1 flex items-center gap-4 ml-4">
 						<div className="flex-1 relative">
-							{/* PR Markers */}
+							{/* PR Markers - positioned based on timestamp */}
 							<div className="absolute inset-0 pointer-events-none flex items-center">
-								{commits.map((_, index) => {
-									const position = (index / (commits.length - 1)) * 100;
+								{commits.map((commit, index) => {
+									// Calculate position based on time
+									const totalTime = timeRange.end - timeRange.start;
+									const commitTime = commit.date.getTime() - timeRange.start;
+									const position = (commitTime / totalTime) * 100;
 									return (
 										<div
 											key={index}
@@ -201,12 +225,17 @@ export function TimelineScrubber({
 									);
 								})}
 							</div>
-							{/* Slider */}
+							{/* Slider - uses percentage (0-100) */}
 							<input
 								type="range"
 								min={0}
-								max={commits.length - 1}
-								value={currentIndex}
+								max={100}
+								step={0.1}
+								value={
+									((currentTime - timeRange.start) /
+										(timeRange.end - timeRange.start)) *
+									100
+								}
 								onChange={handleSliderChange}
 								className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider relative z-10"
 							/>
