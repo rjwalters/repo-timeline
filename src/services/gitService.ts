@@ -97,6 +97,7 @@ export class GitService {
 			console.log(`Fetching from GitHub API: ${this.repoPath}`);
 			try {
 				this.githubService = new GitHubApiService(this.repoPath, this.token);
+				const cacheKey = this.getCacheKey();
 				const commits =
 					await this.githubService.buildTimelineFromPRsIncremental(
 						onCommit
@@ -107,6 +108,14 @@ export class GitService {
 								}
 							: undefined,
 						onProgress,
+						(partialCommits) => {
+							// Save to cache incrementally
+							const calculated = this.calculateSizeChanges(partialCommits);
+							StorageService.saveCommits(cacheKey, calculated);
+							console.log(
+								`Saved ${calculated.length} commits to cache incrementally`,
+							);
+						},
 					);
 				return this.calculateSizeChanges(commits);
 			} catch (error) {

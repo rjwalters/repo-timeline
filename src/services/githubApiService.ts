@@ -219,6 +219,7 @@ export class GitHubApiService {
 	async buildTimelineFromPRsIncremental(
 		onCommit?: (commit: CommitData) => void,
 		onProgress?: (progress: LoadProgress) => void,
+		onSaveCache?: (commits: CommitData[]) => void,
 	): Promise<CommitData[]> {
 		// Fetch all merged PRs
 		const prs = await this.fetchMergedPRs((progress) => {
@@ -300,6 +301,12 @@ export class GitHubApiService {
 			// Call onCommit callback for incremental updates
 			if (onCommit) {
 				onCommit(commit);
+			}
+
+			// Save to cache incrementally so we don't lose data if rate limited
+			if (onSaveCache && (i % 5 === 0 || i === prs.length - 1)) {
+				// Save every 5 PRs or at the end
+				onSaveCache([...commits]);
 			}
 
 			// Throttle between PRs
