@@ -52,6 +52,8 @@
 		"preview": "vite preview --config vite.demo.config.ts",
 		"size": "size-limit",
 		"size:why": "size-limit --why",
+		"check": "pnpm lint && pnpm test:coverage && pnpm build && pnpm build:demo && pnpm size",
+		"check:fix": "pnpm lint:fix && pnpm test:coverage && pnpm build && pnpm build:demo && pnpm size",
 		"prepublishOnly": "pnpm build"
 	},
 	"peerDependencies": {
