@@ -84,9 +84,12 @@ export function RepoInput() {
 
 				<div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
 					<div className="text-sm">
-						<h3 className="font-semibold mb-2">Powered by Cloudflare Workers</h3>
+						<h3 className="font-semibold mb-2">
+							Powered by Cloudflare Workers
+						</h3>
 						<p className="text-gray-400 text-xs">
-							Data is cached globally for fast loading. No GitHub token required!
+							Data is cached globally for fast loading. No GitHub token
+							required!
 						</p>
 					</div>
 				</div>
