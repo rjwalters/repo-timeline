@@ -1,4 +1,9 @@
-import type { CommitData, LoadProgress, RateLimitInfo } from "../types";
+import type {
+	CommitData,
+	FileNode,
+	LoadProgress,
+	RateLimitInfo,
+} from "../types";
 import { buildEdges, buildFileTree } from "../utils/fileTreeBuilder";
 import { GitHubApiService } from "./githubApiService";
 import { StorageService } from "./storageService";
@@ -367,6 +372,7 @@ export class GitService {
 				});
 
 				// Add deleted files as zero-size nodes for animation
+				const addedDeletedNodes: FileNode[] = [];
 				for (const [prevPath, prevFile] of previousFileMap) {
 					if (!currentFileMap.has(prevPath)) {
 						// Check if this file was moved
@@ -381,15 +387,26 @@ export class GitService {
 
 						if (!wasMoved) {
 							// File was deleted - add it with size 0 for animation
-							commits[i].files.push({
+							const deletedNode: FileNode = {
 								...prevFile,
 								size: 0,
 								previousSize: prevFile.size,
 								fileStatus: "deleted",
 								sizeChange: "decrease",
-							});
+							};
+							commits[i].files.push(deletedNode);
+							addedDeletedNodes.push(deletedNode);
 						}
 					}
+				}
+
+				// Rebuild edges to include deleted nodes
+				if (addedDeletedNodes.length > 0) {
+					const fileData = commits[i].files.map((f) => ({
+						path: f.path,
+						size: f.size,
+					}));
+					commits[i].edges = buildEdges(fileData);
 				}
 			}
 		}

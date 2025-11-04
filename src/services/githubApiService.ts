@@ -1,10 +1,5 @@
 import type { CommitData, LoadProgress, RateLimitInfo } from "../types";
-import type {
-	GitHubPR,
-	GitHubCommit,
-	GitHubCommitFile,
-	GitHubPRFile,
-} from "../types/github";
+import type { GitHubPR, GitHubCommit, GitHubPRFile } from "../types/github";
 import { FileStateTracker } from "../utils/fileStateTracker";
 import { FILE_TREE_BUILDER_VERSION } from "../utils/fileTreeBuilder";
 import { buildCommitFromFileState } from "../utils/commitBuilder";

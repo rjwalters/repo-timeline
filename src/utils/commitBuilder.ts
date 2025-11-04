@@ -25,6 +25,22 @@ export function buildCommitFromFileState(
 	const files = buildFileTree(fileData);
 	const edges = buildEdges(fileData);
 
+	// Check for orphaned nodes
+	const connectedNodes = new Set([
+		...edges.map((e) => e.target),
+		...edges.map((e) => e.source),
+	]);
+	const orphanedNodes = files.filter((n) => !connectedNodes.has(n.id));
+	if (orphanedNodes.length > 0) {
+		console.warn(
+			`⚠️  Commit ${sha} has ${orphanedNodes.length} orphaned nodes:`,
+			orphanedNodes.map((n) => `${n.path} (${n.type})`),
+		);
+		console.warn("  File data:", fileData);
+		console.warn("  Nodes:", files.map((n) => `${n.path} (${n.type})`));
+		console.warn("  Edges:", edges.map((e) => `${e.source} → ${e.target}`));
+	}
+
 	return {
 		hash: sha,
 		message,
