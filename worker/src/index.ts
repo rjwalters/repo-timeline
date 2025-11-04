@@ -1,12 +1,20 @@
 /**
  * Cloudflare Worker for Repo Timeline API
  *
- * Provides cached GitHub PR data with opportunistic background updates
+ * Provides cached GitHub commit data from default branch with opportunistic background updates
  */
 
 import type { Env } from "./types";
 import { TokenRotator } from "./utils/tokenRotator";
-import { getCachedData, clearCache, fetchAndCacheRepo, updateRepoData } from "./db/operations";
+import {
+	getCachedData,
+	clearCache,
+	fetchAndCacheRepo,
+	updateRepoData,
+	getCachedCommits,
+	fetchAndCacheCommits,
+	updateCommitData,
+} from "./db/operations";
 import { fetchMergedPRs } from "./api/github";
 import { handleCacheStatusRequest } from "./handlers/cache";
 import { handleRepoSummaryRequest } from "./handlers/summary";
@@ -98,7 +106,7 @@ export default {
 			);
 		}
 
-		// API endpoint: /api/repo/:owner/:repo (full data with files)
+		// API endpoint: /api/repo/:owner/:repo (full data with commits and files)
 		const match = url.pathname.match(/^\/api\/repo\/([^/]+)\/([^/]+)$/);
 		if (!match) {
 			return new Response(JSON.stringify({ error: "Invalid endpoint" }), {
@@ -120,12 +128,14 @@ export default {
 				await clearCache(env.DB, fullName);
 			}
 
-			// Get cached data immediately
-			const cached = forceRefresh ? null : await getCachedData(env.DB, fullName);
+			// Get cached commit data immediately
+			const cached = forceRefresh
+				? null
+				: await getCachedCommits(env.DB, fullName);
 
 			if (cached) {
 				console.log(
-					`Serving cached data for ${fullName} (${cached.prs.length} PRs)`,
+					`Serving cached data for ${fullName} (${cached.commits.length} commits)`,
 				);
 
 				// Trigger background update if cache is old (> 1 hour)
@@ -135,18 +145,18 @@ export default {
 						`Cache is ${Math.round(cacheAge / 60)} minutes old, triggering background update`,
 					);
 					ctx.waitUntil(
-						updateRepoData(
+						updateCommitData(
 							env.DB,
 							tokenRotator.getNextToken(),
 							owner,
 							repo,
-							cached.lastPrNumber,
-							fetchMergedPRs,
+							cached.lastCommitSha,
+							cached.defaultBranch,
 						),
 					);
 				}
 
-				return new Response(JSON.stringify(cached.prs), {
+				return new Response(JSON.stringify(cached.commits), {
 					headers: {
 						...corsHeaders,
 						"Content-Type": "application/json",
@@ -157,16 +167,15 @@ export default {
 			}
 
 			// No cache - fetch synchronously for first request
-			console.log(`No cache for ${fullName}, fetching from GitHub`);
-			const prs = await fetchAndCacheRepo(
+			console.log(`No cache for ${fullName}, fetching commits from GitHub`);
+			const commits = await fetchAndCacheCommits(
 				env.DB,
 				tokenRotator.getNextToken(),
 				owner,
 				repo,
-				fetchMergedPRs,
 			);
 
-			return new Response(JSON.stringify(prs), {
+			return new Response(JSON.stringify(commits), {
 				headers: {
 					...corsHeaders,
 					"Content-Type": "application/json",

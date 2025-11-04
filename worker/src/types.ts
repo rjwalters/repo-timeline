@@ -28,3 +28,31 @@ export interface CachedRepo {
 	lastUpdated: number;
 	lastPrNumber: number;
 }
+
+// Commit types for the new commit-based approach
+export interface CommitFile {
+	filename: string;
+	status: string;
+	additions: number;
+	deletions: number;
+	previous_filename?: string;
+}
+
+export interface Commit {
+	sha: string;
+	commit: {
+		message: string;
+		author: {
+			name: string;
+			date: string;
+		};
+	};
+	files?: CommitFile[];
+}
+
+export interface CachedCommits {
+	commits: Commit[];
+	lastUpdated: number;
+	lastCommitSha: string | null;
+	defaultBranch: string;
+}

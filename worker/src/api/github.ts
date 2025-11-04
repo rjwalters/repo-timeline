@@ -6,6 +6,127 @@
 import type { PRFile, PullRequest } from "../types";
 
 /**
+ * Fetch repository metadata including default branch
+ */
+export async function fetchRepoInfo(
+	token: string,
+	owner: string,
+	repo: string,
+): Promise<{ default_branch: string }> {
+	const url = `https://api.github.com/repos/${owner}/${repo}`;
+
+	const response = await fetch(url, {
+		headers: {
+			Authorization: `Bearer ${token}`,
+			Accept: "application/vnd.github.v3+json",
+			"User-Agent": "Repo-Timeline-Worker",
+		},
+	});
+
+	if (!response.ok) {
+		if (response.status === 404) {
+			throw new Error(`Repository ${owner}/${repo} not found`);
+		}
+		throw new Error(`GitHub API error: ${response.status}`);
+	}
+
+	return await response.json();
+}
+
+/**
+ * Fetch commits from default branch
+ */
+export async function fetchCommits(
+	token: string,
+	owner: string,
+	repo: string,
+	branch: string,
+	sinceCommit?: string,
+	maxPages: number = 10,
+): Promise<any[]> {
+	const allCommits: any[] = [];
+	let page = 1;
+	const perPage = 100;
+
+	console.log(`Fetching commits from ${owner}/${repo}@${branch}`);
+
+	while (page <= maxPages) {
+		const url = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=${perPage}&page=${page}`;
+
+		const response = await fetch(url, {
+			headers: {
+				Authorization: `Bearer ${token}`,
+				Accept: "application/vnd.github.v3+json",
+				"User-Agent": "Repo-Timeline-Worker",
+			},
+		});
+
+		if (!response.ok) {
+			if (response.status === 404) {
+				throw new Error(`Repository ${owner}/${repo} or branch ${branch} not found`);
+			}
+			if (response.status === 403) {
+				throw new Error("GitHub API rate limit exceeded");
+			}
+			throw new Error(`GitHub API error: ${response.status}`);
+		}
+
+		const commits: any[] = await response.json();
+
+		if (commits.length === 0) {
+			break;
+		}
+
+		// If we have a sinceCommit, stop when we reach it
+		if (sinceCommit) {
+			const sinceIndex = commits.findIndex((c) => c.sha === sinceCommit);
+			if (sinceIndex >= 0) {
+				allCommits.push(...commits.slice(0, sinceIndex));
+				break;
+			}
+		}
+
+		allCommits.push(...commits);
+
+		// If we got fewer commits than requested, we're done
+		if (commits.length < perPage) {
+			break;
+		}
+
+		page++;
+	}
+
+	console.log(`Fetched ${allCommits.length} commits from ${owner}/${repo}@${branch}`);
+	return allCommits;
+}
+
+/**
+ * Fetch files for a specific commit
+ */
+export async function fetchCommitFiles(
+	token: string,
+	owner: string,
+	repo: string,
+	commitSha: string,
+): Promise<any> {
+	const url = `https://api.github.com/repos/${owner}/${repo}/commits/${commitSha}`;
+
+	const response = await fetch(url, {
+		headers: {
+			Authorization: `Bearer ${token}`,
+			Accept: "application/vnd.github.v3+json",
+			"User-Agent": "Repo-Timeline-Worker",
+		},
+	});
+
+	if (!response.ok) {
+		throw new Error(`GitHub API error: ${response.status}`);
+	}
+
+	return await response.json();
+}
+
+/**
  * Fetch a single PR from GitHub
  */
 export async function fetchSinglePR(

@@ -3,6 +3,9 @@
  * Handles storing and retrieving repository data from Cloudflare D1
  */
 
+import type { Commit } from "../types";
+import { fetchRepoInfo, fetchCommits, fetchCommitFiles } from "../api/github";
+
 /**
  * Clear cached data for a repository
  */
@@ -333,5 +336,311 @@ export async function updateRepoData(
 		}
 	} catch (error) {
 		console.error("Error in background update:", error);
+	}
+}
+
+/**
+ * Get cached commit data from D1
+ */
+export async function getCachedCommits(
+	db: D1Database,
+	fullName: string,
+): Promise<{
+	commits: Commit[];
+	lastUpdated: number;
+	lastCommitSha: string | null;
+	defaultBranch: string;
+} | null> {
+	// Get repo metadata
+	const repo = await db
+		.prepare(
+			"SELECT id, last_updated, last_commit_sha, default_branch FROM repos WHERE full_name = ?",
+		)
+		.bind(fullName)
+		.first();
+
+	if (!repo) {
+		return null;
+	}
+
+	// Get all commits
+	const commits = await db
+		.prepare(`
+		SELECT commit_sha, message, author, committed_at, id
+		FROM commits
+		WHERE repo_id = ?
+		ORDER BY committed_at ASC
+	`)
+		.bind(repo.id)
+		.all();
+
+	if (!commits.results || commits.results.length === 0) {
+		return null;
+	}
+
+	// Transform data to match GitHub API format
+	const transformedCommits = await Promise.all(
+		commits.results.map(async (commit: any) => {
+			// Get files for this commit
+			const filesResult = await db
+				.prepare(`
+			SELECT filename, status, additions, deletions, previous_filename
+			FROM commit_files
+			WHERE commit_id = ?
+		`)
+				.bind(commit.id)
+				.all();
+
+			const files = filesResult.results || [];
+
+			return {
+				sha: commit.commit_sha,
+				commit: {
+					message: commit.message,
+					author: {
+						name: commit.author,
+						date: new Date(commit.committed_at * 1000).toISOString(),
+					},
+				},
+				files: files,
+			};
+		}),
+	);
+
+	return {
+		commits: transformedCommits,
+		lastUpdated: repo.last_updated,
+		lastCommitSha: repo.last_commit_sha || null,
+		defaultBranch: repo.default_branch || "main",
+	};
+}
+
+/**
+ * Store commit data in D1
+ */
+export async function storeCommitData(
+	db: D1Database,
+	owner: string,
+	name: string,
+	defaultBranch: string,
+	commits: Commit[],
+	isUpdate = false,
+): Promise<void> {
+	const fullName = `${owner}/${name}`;
+	const now = Math.floor(Date.now() / 1000);
+	const lastCommitSha = commits.length > 0 ? commits[0].sha : null;
+
+	// Insert or update repo first
+	if (isUpdate) {
+		await db
+			.prepare(
+				"UPDATE repos SET last_updated = ?, last_commit_sha = ?, default_branch = ? WHERE full_name = ?",
+			)
+			.bind(now, lastCommitSha, defaultBranch, fullName)
+			.run();
+	} else {
+		await db
+			.prepare(`
+			INSERT INTO repos (owner, name, full_name, last_updated, last_commit_sha, default_branch, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(full_name) DO UPDATE SET last_updated = ?, last_commit_sha = ?, default_branch = ?
+		`)
+			.bind(
+				owner,
+				name,
+				fullName,
+				now,
+				lastCommitSha,
+				defaultBranch,
+				now,
+				now,
+				lastCommitSha,
+				defaultBranch,
+			)
+			.run();
+	}
+
+	// Get repo ID
+	const repo = await db
+		.prepare("SELECT id FROM repos WHERE full_name = ?")
+		.bind(fullName)
+		.first();
+
+	if (!repo) {
+		throw new Error("Failed to get repo ID");
+	}
+
+	// Insert commits and their files
+	for (const commit of commits) {
+		// Insert commit first
+		await db
+			.prepare(`
+			INSERT INTO commits (repo_id, commit_sha, message, author, committed_at, created_at)
+			VALUES (?, ?, ?, ?, ?, ?)
+			ON CONFLICT(repo_id, commit_sha) DO NOTHING
+		`)
+			.bind(
+				repo.id,
+				commit.sha,
+				commit.commit.message,
+				commit.commit.author.name,
+				Math.floor(new Date(commit.commit.author.date).getTime() / 1000),
+				now,
+			)
+			.run();
+
+		// Get commit ID
+		const commitRow = await db
+			.prepare(
+				"SELECT id FROM commits WHERE repo_id = ? AND commit_sha = ?",
+			)
+			.bind(repo.id, commit.sha)
+			.first();
+
+		if (commitRow && commit.files && commit.files.length > 0) {
+			// Batch insert files for this commit
+			const fileBatch = commit.files.map((file: any) =>
+				db
+					.prepare(`
+					INSERT INTO commit_files (commit_id, filename, status, additions, deletions, previous_filename)
+					VALUES (?, ?, ?, ?, ?, ?)
+					ON CONFLICT DO NOTHING
+				`)
+					.bind(
+						commitRow.id,
+						file.filename,
+						file.status,
+						file.additions || 0,
+						file.deletions || 0,
+						file.previous_filename || null,
+					),
+			);
+
+			await db.batch(fileBatch);
+		}
+	}
+
+	console.log(`Stored ${commits.length} commits for ${fullName}`);
+}
+
+/**
+ * Fetch repo commits from GitHub and cache them
+ */
+export async function fetchAndCacheCommits(
+	db: D1Database,
+	token: string,
+	owner: string,
+	repo: string,
+): Promise<Commit[]> {
+	const fullName = `${owner}/${repo}`;
+
+	// First, get the default branch
+	const repoInfo = await fetchRepoInfo(token, owner, repo);
+	const defaultBranch = repoInfo.default_branch;
+
+	console.log(`Fetching commits from ${fullName} (${defaultBranch} branch)`);
+
+	// Fetch commits from default branch
+	// Limit pages to avoid fetching too many commits
+	const commitList = await fetchCommits(
+		token,
+		owner,
+		repo,
+		defaultBranch,
+		undefined,
+		1, // Fetch only 1 page (100 commits) initially
+	);
+
+	if (commitList.length === 0) {
+		return [];
+	}
+
+	// Limit to prevent too many API calls - Cloudflare Workers has 50 subrequest limit
+	// We need: 1 for repo info, 1 for commit list, N for commit details
+	// So maximum N = 48, but let's be conservative and use 40
+	const maxCommits = 40;
+	const commitsToProcess = commitList.slice(0, maxCommits);
+	const commits: Commit[] = [];
+
+	console.log(
+		`Processing ${commitsToProcess.length} of ${commitList.length} commits`,
+	);
+
+	// Fetch files for each commit
+	for (const commitMeta of commitsToProcess) {
+		const commitDetails = await fetchCommitFiles(
+			token,
+			owner,
+			repo,
+			commitMeta.sha,
+		);
+
+		commits.push(commitDetails);
+	}
+
+	// Store in database
+	await storeCommitData(db, owner, repo, defaultBranch, commits);
+
+	return commits;
+}
+
+/**
+ * Update commit data in background (incremental)
+ */
+export async function updateCommitData(
+	db: D1Database,
+	token: string,
+	owner: string,
+	repo: string,
+	lastCommitSha: string | null,
+	defaultBranch: string,
+): Promise<void> {
+	try {
+		console.log(
+			`Background update for ${owner}/${repo} from commit ${lastCommitSha}`,
+		);
+
+		// Fetch new commits since last update
+		const commitList = await fetchCommits(
+			token,
+			owner,
+			repo,
+			defaultBranch,
+			lastCommitSha || undefined,
+			1, // Fetch only 1 page for updates
+		);
+
+		if (commitList.length === 0) {
+			console.log("No new commits, cache is up to date");
+			// Update timestamp anyway
+			await db
+				.prepare(
+					"UPDATE repos SET last_updated = ? WHERE owner = ? AND name = ?",
+				)
+				.bind(Math.floor(Date.now() / 1000), owner, repo)
+				.run();
+			return;
+		}
+
+		// Fetch files for new commits (limit to 40 to stay under subrequest limit)
+		const commitsToProcess = commitList.slice(0, 40);
+		const commits: Commit[] = [];
+
+		for (const commitMeta of commitsToProcess) {
+			const commitDetails = await fetchCommitFiles(
+				token,
+				owner,
+				repo,
+				commitMeta.sha,
+			);
+			commits.push(commitDetails);
+		}
+
+		if (commits.length > 0) {
+			console.log(`Found ${commits.length} new commits, updating cache`);
+			await storeCommitData(db, owner, repo, defaultBranch, commits, true);
+		}
+	} catch (error) {
+		console.error("Error in background commit update:", error);
 	}
 }
