@@ -59,7 +59,7 @@ export function RepoInput() {
 						</a>
 					</div>
 					<p className="text-gray-400 text-lg">
-						Visualize how a GitHub repository evolved through pull requests
+						Visualize how a GitHub repository evolved through commits
 					</p>
 				</div>
 
