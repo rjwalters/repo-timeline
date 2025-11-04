@@ -1,4 +1,3 @@
-import { getDemoCommits } from "../data/demoCommits";
 import type { CommitData, LoadProgress, RateLimitInfo } from "../types";
 import { buildEdges, buildFileTree } from "../utils/fileTreeBuilder";
 import { GitHubApiService } from "./githubApiService";
@@ -119,8 +118,8 @@ export class GitService {
 			if (cached) {
 				return cached;
 			}
-			// Return demo data as last resort
-			return this.calculateSizeChanges(getDemoCommits());
+			// Re-throw the error instead of returning demo data
+			throw error;
 		}
 	}
 
@@ -176,24 +175,11 @@ export class GitService {
 			// Simulate incremental parsing for progress
 			const commits = this.parseCommitsWithProgress(data, onProgress);
 			return commits;
-		} catch (_error) {
-			// Return demo data for development
-			const demoData = getDemoCommits();
-
-			// Simulate loading progress for demo
-			if (onProgress) {
-				for (let i = 0; i <= demoData.length; i++) {
-					onProgress({
-						loaded: i,
-						total: demoData.length,
-						percentage: Math.round((i / demoData.length) * 100),
-					});
-					// Small delay to simulate loading
-					await new Promise((resolve) => setTimeout(resolve, 100));
-				}
-			}
-
-			return this.calculateSizeChanges(demoData);
+		} catch (error) {
+			// Re-throw error - no demo data fallback
+			throw new Error(
+				`Failed to fetch repository data. Please check the repository path and try again. ${error instanceof Error ? error.message : ""}`,
+			);
 		}
 	}
 

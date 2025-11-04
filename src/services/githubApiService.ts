@@ -23,6 +23,16 @@ export interface GitHubCommit {
 			date: string;
 		};
 	};
+	files?: GitHubCommitFile[];
+}
+
+export interface GitHubCommitFile {
+	filename: string;
+	status: "added" | "removed" | "modified" | "renamed";
+	additions: number;
+	deletions: number;
+	changes: number;
+	previous_filename?: string;
 }
 
 export interface GitHubPRFile {
@@ -480,7 +490,8 @@ export class GitHubApiService {
 	}
 
 	/**
-	 * Build commit timeline from commits directly (fallback when no PRs)
+	 * Build commit timeline from commits directly (when no merged PRs exist)
+	 * This fetches commits from the main branch and builds file state incrementally
 	 */
 	async buildTimelineFromCommits(
 		onCommit?: (commit: CommitData) => void,
@@ -490,62 +501,95 @@ export class GitHubApiService {
 			onProgress({
 				loaded: 0,
 				total: -1,
-				percentage: 10,
-				message: "Fetching commits (no PRs found)...",
+				percentage: 0,
+				message: "Fetching commits from main branch...",
 			});
 		}
 
-		// Fetch commits from default branch
-		const commits: CommitData[] = [];
+		// First, fetch commit list (without file details)
+		const commitList: GitHubCommit[] = [];
 		let page = 1;
 		const perPage = 100;
 		const maxCommits = 100; // Limit to avoid too many API calls
 
-		while (commits.length < maxCommits) {
+		while (commitList.length < maxCommits) {
 			const batch = await this.fetchGitHub<GitHubCommit[]>(
 				`/repos/${this.owner}/${this.repo}/commits?per_page=${perPage}&page=${page}`,
 			);
 
 			if (batch.length === 0) break;
 
-			// Process each commit
-			for (const commitData of batch) {
-				if (commits.length >= maxCommits) break;
-
-				const commit: CommitData = {
-					hash: commitData.sha.substring(0, 7),
-					message: commitData.commit.message.split("\n")[0],
-					author: commitData.commit.author.name,
-					date: new Date(commitData.commit.author.date),
-					files: [], // We'd need to fetch commit details for files
-					edges: [],
-				};
-
-				commits.push(commit);
-
-				if (onCommit) {
-					onCommit(commit);
-				}
-
-				if (onProgress) {
-					onProgress({
-						loaded: commits.length,
-						total: maxCommits,
-						percentage: 10 + Math.round((commits.length / maxCommits) * 90),
-						message: `Loading commits: ${commits.length}/${maxCommits}`,
-					});
-				}
-			}
+			commitList.push(...batch.slice(0, maxCommits - commitList.length));
 
 			if (batch.length < perPage) break;
 			page++;
 			await this.sleep(this.requestDelay);
 		}
 
-		if (commits.length === 0) {
-			throw new Error(
-				"No commits or pull requests found. Repository may be empty or private.",
+		if (commitList.length === 0) {
+			throw new Error("No commits found. Repository may be empty or private.");
+		}
+
+		// Now fetch file details for each commit and build timeline
+		const commits: CommitData[] = [];
+		const fileStateTracker = new FileStateTracker();
+
+		for (let i = 0; i < commitList.length; i++) {
+			const commitMeta = commitList[i];
+
+			if (onProgress) {
+				onProgress({
+					loaded: i + 1,
+					total: commitList.length,
+					percentage: Math.round(((i + 1) / commitList.length) * 100),
+					message: `Processing commit ${i + 1}/${commitList.length}`,
+				});
+			}
+
+			// Fetch full commit details with files
+			const commitDetails = await this.fetchGitHub<GitHubCommit>(
+				`/repos/${this.owner}/${this.repo}/commits/${commitMeta.sha}`,
 			);
+
+			// Update file state from commit files
+			if (commitDetails.files && commitDetails.files.length > 0) {
+				// Convert GitHubCommitFile to GitHubPRFile format
+				const prFiles: GitHubPRFile[] = commitDetails.files.map((file) => ({
+					filename: file.filename,
+					status: file.status,
+					additions: file.additions,
+					deletions: file.deletions,
+					changes: file.changes,
+					previous_filename: file.previous_filename,
+				}));
+
+				fileStateTracker.updateFromPRFiles(prFiles);
+			}
+
+			// Build commit snapshot from current file state
+			const fileData = fileStateTracker.getFileData();
+			const files = buildFileTree(fileData);
+			const edges = buildEdges(fileData);
+
+			const commit: CommitData = {
+				hash: commitDetails.sha.substring(0, 7),
+				message: commitDetails.commit.message.split("\n")[0],
+				author: commitDetails.commit.author.name,
+				date: new Date(commitDetails.commit.author.date),
+				files,
+				edges,
+			};
+
+			commits.push(commit);
+
+			if (onCommit) {
+				onCommit(commit);
+			}
+
+			// Throttle between commits
+			if (i < commitList.length - 1) {
+				await this.sleep(this.requestDelay);
+			}
 		}
 
 		return commits;
