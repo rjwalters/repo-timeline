@@ -121,15 +121,6 @@ export function RepoTimeline({
 					edges: [],
 				};
 
-	console.log(
-		"RepoTimeline render - repoPath:",
-		repoPath,
-		"workerUrl:",
-		workerUrl,
-		"repoStatus:",
-		repoStatus,
-	);
-
 	return (
 		<div className="w-full h-full relative flex flex-col">
 			{/* 3D Visualization */}

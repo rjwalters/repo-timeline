@@ -26,12 +26,6 @@ export function RepoStatusBanner({
 	backgroundLoading = false,
 	loadProgress = null,
 }: RepoStatusBannerProps) {
-	console.log("RepoStatusBanner render:", {
-		github,
-		cache,
-		recommendation,
-	});
-
 	const statusColors = {
 		ready: "bg-green-900 border-green-600 text-green-200",
 		partial: "bg-yellow-900 border-yellow-600 text-yellow-200",
