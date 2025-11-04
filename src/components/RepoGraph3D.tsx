@@ -1,6 +1,7 @@
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { FileEdge, FileNode } from "../types";
 import { ForceSimulation } from "../utils/forceSimulation";
 import { FileEdge3D } from "./FileEdge3D";
@@ -12,13 +13,28 @@ interface RepoGraph3DProps {
 	onNodeClick?: (node: FileNode) => void;
 }
 
-export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
-	const [simulationNodes, setSimulationNodes] = useState<FileNode[]>(nodes);
-	const [contextLost, setContextLost] = useState(false);
-	const simulationRef = useRef<ForceSimulation | null>(null);
-	const animationFrameRef = useRef<number>();
-	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	const previousNodesRef = useRef<Map<string, FileNode>>(new Map());
+export interface RepoGraph3DHandle {
+	resetCamera: () => void;
+}
+
+export const RepoGraph3D = forwardRef<RepoGraph3DHandle, RepoGraph3DProps>(
+	function RepoGraph3D({ nodes, edges, onNodeClick }, ref) {
+		const [simulationNodes, setSimulationNodes] = useState<FileNode[]>(nodes);
+		const [contextLost, setContextLost] = useState(false);
+		const simulationRef = useRef<ForceSimulation | null>(null);
+		const animationFrameRef = useRef<number>();
+		const canvasRef = useRef<HTMLCanvasElement | null>(null);
+		const previousNodesRef = useRef<Map<string, FileNode>>(new Map());
+		const orbitControlsRef = useRef<OrbitControlsImpl>(null);
+
+		// Expose reset function to parent
+		useImperativeHandle(ref, () => ({
+			resetCamera: () => {
+				if (orbitControlsRef.current) {
+					orbitControlsRef.current.reset();
+				}
+			},
+		}));
 
 	useEffect(() => {
 		// Create a deep copy of nodes to avoid mutating props
@@ -241,6 +257,7 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 			))}
 
 			<OrbitControls
+				ref={orbitControlsRef}
 				enableDamping
 				dampingFactor={0.05}
 				rotateSpeed={0.5}
@@ -248,4 +265,5 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 			/>
 		</Canvas>
 	);
-}
+	},
+);

@@ -1,5 +1,5 @@
 import { ArrowLeft, ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TEST_MODE } from "../config";
 import { usePlaybackTimer } from "../hooks/usePlaybackTimer";
 import { useRepoData } from "../hooks/useRepoData";
@@ -11,7 +11,7 @@ import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { LoadingState } from "./LoadingState";
 import { RateLimitDisplay } from "./RateLimitDisplay";
-import { RepoGraph3D } from "./RepoGraph3D";
+import { RepoGraph3D, type RepoGraph3DHandle } from "./RepoGraph3D";
 import { RepoStatusBanner } from "./RepoStatusBanner";
 import {
 	PlaybackDirection,
@@ -62,6 +62,11 @@ export function RepoTimeline({
 		initialPlaybackDirection,
 	);
 	const [isBannerVisible, setIsBannerVisible] = useState(true);
+	const graphRef = useRef<RepoGraph3DHandle>(null);
+
+	const handleResetView = useCallback(() => {
+		graphRef.current?.resetCamera();
+	}, []);
 
 	const currentIndex = getCurrentIndex(commits, currentTime);
 
@@ -178,6 +183,7 @@ export function RepoTimeline({
 			{/* 3D Visualization - fills all available space */}
 			<div className="flex-1 relative z-0">
 				<RepoGraph3D
+					ref={graphRef}
 					nodes={currentCommit.files}
 					edges={currentCommit.edges}
 					onNodeClick={handleNodeClick}
@@ -223,6 +229,7 @@ export function RepoTimeline({
 						onSpeedChange={setPlaybackSpeed}
 						playbackDirection={playbackDirection}
 						onDirectionChange={setPlaybackDirection}
+						onResetView={handleResetView}
 					/>
 				</div>
 			)}

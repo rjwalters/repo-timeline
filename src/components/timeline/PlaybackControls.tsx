@@ -5,6 +5,7 @@ import {
 	Pause,
 	Play,
 	Rewind,
+	RotateCcw,
 	SkipBack,
 	SkipForward,
 } from "lucide-react";
@@ -24,6 +25,7 @@ interface PlaybackControlsProps {
 	onPrevious: () => void;
 	onNext: () => void;
 	onSkipToEnd: () => void;
+	onResetView?: () => void;
 }
 
 export const PlaybackControls = memo(function PlaybackControls({
@@ -39,6 +41,7 @@ export const PlaybackControls = memo(function PlaybackControls({
 	onPrevious,
 	onNext,
 	onSkipToEnd,
+	onResetView,
 }: PlaybackControlsProps) {
 	const cycleSpeed = () => {
 		const speeds: PlaybackSpeed[] = [1, 60, 300, 1800];
@@ -127,6 +130,17 @@ export const PlaybackControls = memo(function PlaybackControls({
 			>
 				<ChevronsRight size={18} />
 			</button>
+
+		{/* Reset view */}
+		{onResetView && (
+			<button
+				onClick={onResetView}
+				className="p-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors ml-2"
+				title="Reset camera view"
+			>
+				<RotateCcw size={18} />
+			</button>
+		)}
 		</div>
 	);
 });

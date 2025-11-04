@@ -17,6 +17,7 @@ interface TimelineScrubberProps {
 	onSpeedChange: (speed: PlaybackSpeed) => void;
 	playbackDirection: PlaybackDirection;
 	onDirectionChange: (direction: PlaybackDirection) => void;
+	onResetView?: () => void;
 }
 
 export function TimelineScrubber({
@@ -30,6 +31,7 @@ export function TimelineScrubber({
 	onSpeedChange,
 	playbackDirection,
 	onDirectionChange,
+	onResetView,
 }: TimelineScrubberProps) {
 	const currentIndex = getCurrentIndex(commits, currentTime);
 
@@ -94,6 +96,7 @@ export function TimelineScrubber({
 						onPrevious={handlePrevious}
 						onNext={handleNext}
 						onSkipToEnd={handleSkipToEnd}
+						onResetView={onResetView}
 					/>
 
 					{/* Slider with PR markers */}
