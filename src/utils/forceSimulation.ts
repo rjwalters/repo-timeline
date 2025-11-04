@@ -30,16 +30,27 @@ export class ForceSimulation {
 				node.y === undefined ||
 				node.z === undefined
 			) {
-				const angle1 = Math.random() * Math.PI * 2;
-				const angle2 = Math.random() * Math.PI * 2;
-				const radius = 100 + Math.random() * 100;
+				// Pin root node at origin
+				if (node.id === "/" || node.path === "/") {
+					node.x = 0;
+					node.y = 0;
+					node.z = 0;
+					node.vx = 0;
+					node.vy = 0;
+					node.vz = 0;
+				} else {
+					// Other nodes start at random positions around the origin
+					const angle1 = Math.random() * Math.PI * 2;
+					const angle2 = Math.random() * Math.PI * 2;
+					const radius = 100 + Math.random() * 100;
 
-				node.x = radius * Math.sin(angle1) * Math.cos(angle2);
-				node.y = radius * Math.sin(angle1) * Math.sin(angle2);
-				node.z = radius * Math.cos(angle1);
-				node.vx = 0;
-				node.vy = 0;
-				node.vz = 0;
+					node.x = radius * Math.sin(angle1) * Math.cos(angle2);
+					node.y = radius * Math.sin(angle1) * Math.sin(angle2);
+					node.z = radius * Math.cos(angle1);
+					node.vx = 0;
+					node.vy = 0;
+					node.vz = 0;
+				}
 			}
 		});
 	}
@@ -53,6 +64,17 @@ export class ForceSimulation {
 		// Update positions with velocity damping
 		const damping = 0.85; // Slightly more damping for stability
 		this.nodes.forEach((node) => {
+			// Pin the root node at the origin
+			if (node.id === "/" || node.path === "/") {
+				node.x = 0;
+				node.y = 0;
+				node.z = 0;
+				node.vx = 0;
+				node.vy = 0;
+				node.vz = 0;
+				return;
+			}
+
 			if (
 				node.vx !== undefined &&
 				node.vy !== undefined &&

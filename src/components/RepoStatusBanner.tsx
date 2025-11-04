@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { LoadProgress } from "../types";
 
 interface RepoStatusBannerProps {
@@ -19,6 +19,10 @@ interface RepoStatusBannerProps {
 	recommendation: "ready" | "partial" | "fetching";
 	backgroundLoading?: boolean;
 	loadProgress?: LoadProgress | null;
+	onClearCache?: () => void;
+	isVisible: boolean;
+	onVisibilityChange: (visible: boolean) => void;
+	toggleButton?: React.ReactNode;
 }
 
 export function RepoStatusBanner({
@@ -27,9 +31,11 @@ export function RepoStatusBanner({
 	recommendation,
 	backgroundLoading = false,
 	loadProgress = null,
+	onClearCache,
+	isVisible,
+	onVisibilityChange,
+	toggleButton,
 }: RepoStatusBannerProps) {
-	const [isVisible, setIsVisible] = useState(true);
-	const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 	const statusColors = {
 		ready: "bg-green-900 border-green-600 text-green-200",
 		partial: "bg-yellow-900 border-yellow-600 text-yellow-200",
@@ -56,56 +62,50 @@ export function RepoStatusBanner({
 
 	// Auto-hide banner when ready (after 3 seconds)
 	useEffect(() => {
-		if (effectiveRecommendation === "ready" && !backgroundLoading) {
-			// Wait 3 seconds, then start slide-out animation
+		if (effectiveRecommendation === "ready" && !backgroundLoading && isVisible) {
+			// Wait 3 seconds, then hide
 			const hideTimer = setTimeout(() => {
-				setIsAnimatingOut(true);
-				// After animation completes (500ms), hide completely
-				setTimeout(() => {
-					setIsVisible(false);
-				}, 500);
+				onVisibilityChange(false);
 			}, 3000);
 
 			return () => clearTimeout(hideTimer);
 		}
-		// Reset visibility if status changes back to non-ready
-		if (effectiveRecommendation !== "ready" || backgroundLoading) {
-			setIsVisible(true);
-			setIsAnimatingOut(false);
+		// Show banner if status changes back to non-ready
+		if ((effectiveRecommendation !== "ready" || backgroundLoading) && !isVisible) {
+			onVisibilityChange(true);
 		}
-	}, [effectiveRecommendation, backgroundLoading]);
-
-	// Don't render if hidden
-	if (!isVisible) {
-		return null;
-	}
+	}, [effectiveRecommendation, backgroundLoading, isVisible, onVisibilityChange]);
 
 	return (
 		<div
-			className={`overflow-hidden transition-all duration-500 ease-in-out ${
-				isAnimatingOut ? "max-h-0 opacity-0" : "max-h-24 opacity-100"
+			className={`relative z-10 transition-transform duration-500 ease-in-out ${
+				isVisible ? "translate-y-0" : "translate-y-full"
 			}`}
+			style={{ willChange: "transform" }}
 		>
+			{/* Toggle button - moves with banner */}
+			{toggleButton}
+
 			<div
 				className={`py-2 px-4 border-b ${statusColors[effectiveRecommendation]}`}
 			>
-				<div className="flex items-center gap-4 text-sm">
-					<div className="flex items-center gap-2">
-						<span className="text-lg">
-							{statusIcons[effectiveRecommendation]}
-						</span>
-						<span className="font-semibold">
-							{statusMessages[effectiveRecommendation]}
-						</span>
-						{backgroundLoading && loadProgress && (
-							<span className="text-xs opacity-75">
-								({loadProgress.loaded}/
-								{loadProgress.total !== -1 ? loadProgress.total : "?"} PRs -{" "}
-								{loadProgress.percentage}%)
-							</span>
-						)}
-					</div>
+				<div className="flex items-center justify-between gap-4 text-sm">
 					<div className="flex items-center gap-4 flex-wrap">
+						<div className="flex items-center gap-2">
+							<span className="text-lg">
+								{statusIcons[effectiveRecommendation]}
+							</span>
+							<span className="font-semibold">
+								{statusMessages[effectiveRecommendation]}
+							</span>
+							{backgroundLoading && loadProgress && (
+								<span className="text-xs opacity-75">
+									({loadProgress.loaded}/
+									{loadProgress.total !== -1 ? loadProgress.total : "?"} PRs -{" "}
+									{loadProgress.percentage}%)
+								</span>
+							)}
+						</div>
 						<div>
 							<strong>GitHub:</strong> ~{github.estimatedTotalPRs} PRs
 							{github.firstMergedPR && (
@@ -138,6 +138,15 @@ export function RepoStatusBanner({
 							</div>
 						)}
 					</div>
+					{onClearCache && cache.exists && (
+						<button
+							onClick={onClearCache}
+							className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 rounded transition-colors flex-shrink-0"
+							title="Clear local cache and reload data"
+						>
+							Clear
+						</button>
+					)}
 				</div>
 			</div>
 		</div>

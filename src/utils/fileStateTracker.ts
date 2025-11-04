@@ -44,10 +44,12 @@ export class FileStateTracker {
 	 * Get file data suitable for building file tree
 	 */
 	getFileData(): Array<{ path: string; size: number }> {
-		return this.getFileState().map(([path, size]) => ({
-			path,
-			size: Math.max(0, size), // Ensure non-negative sizes
-		}));
+		return this.getFileState()
+			.filter(([, size]) => size > 0) // Exclude files with 0 or negative size (deleted)
+			.map(([path, size]) => ({
+				path,
+				size,
+			}));
 	}
 
 	/**

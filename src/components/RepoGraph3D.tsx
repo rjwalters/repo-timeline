@@ -1,6 +1,6 @@
 import { OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileEdge, FileNode } from "../types";
 import { ForceSimulation } from "../utils/forceSimulation";
 import { FileEdge3D } from "./FileEdge3D";
@@ -24,6 +24,10 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 		// Create a deep copy of nodes to avoid mutating props
 		const nodesCopy = nodes.map((n) => ({ ...n }));
 
+		// Separate deleted nodes from active nodes
+		const deletedNodes: FileNode[] = [];
+		const activeNodes: FileNode[] = [];
+
 		// Preserve positions from previous state for nodes that existed before
 		const previousNodes = previousNodesRef.current;
 		let hasNewNodes = false;
@@ -40,10 +44,17 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 			} else {
 				hasNewNodes = true;
 			}
+
+			// Separate deleted nodes - they keep their positions and don't participate in simulation
+			if (node.fileStatus === "deleted") {
+				deletedNodes.push(node);
+			} else {
+				activeNodes.push(node);
+			}
 		});
 
-		// Initialize or update simulation with tuned parameters
-		simulationRef.current = new ForceSimulation(nodesCopy, edges, {
+		// Initialize or update simulation with only active nodes (not deleted)
+		simulationRef.current = new ForceSimulation(activeNodes, edges, {
 			strength: 1.0, // Spring stiffness (10x stronger to pull nodes closer)
 			distance: 15, // Ideal spring distance (reduced for tighter layout)
 			iterations: 500, // More iterations for better convergence
@@ -59,10 +70,12 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 					cancelAnimationFrame(animationFrameRef.current);
 				}
 				// Update previous nodes reference when simulation completes
+				// Include both active and deleted nodes
 				if (simulationRef.current) {
 					const finalNodes = simulationRef.current.getNodes();
+					const allNodes = [...finalNodes, ...deletedNodes];
 					previousNodesRef.current = new Map(
-						finalNodes.map((n) => [n.id, { ...n }]),
+						allNodes.map((n) => [n.id, { ...n }]),
 					);
 				}
 				return;
@@ -70,7 +83,9 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 
 			simulationRef.current.tick();
 			const currentNodes = simulationRef.current.getNodes();
-			setSimulationNodes([...currentNodes]);
+			// Combine simulated nodes with deleted nodes (which stay in place)
+			const allNodes = [...currentNodes, ...deletedNodes];
+			setSimulationNodes(allNodes);
 			iterations++;
 
 			// Slow down the simulation over time for smooth convergence
@@ -97,10 +112,12 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 				cancelAnimationFrame(animationFrameRef.current);
 			}
 			// Save final positions even if simulation is interrupted
+			// Include both active and deleted nodes
 			if (simulationRef.current) {
 				const finalNodes = simulationRef.current.getNodes();
+				const allNodes = [...finalNodes, ...deletedNodes];
 				previousNodesRef.current = new Map(
-					finalNodes.map((n) => [n.id, { ...n }]),
+					allNodes.map((n) => [n.id, { ...n }]),
 				);
 			}
 		};
@@ -131,10 +148,23 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 		};
 	}, []);
 
-	const nodeMap = useMemo(
-		() => new Map(simulationNodes.map((n) => [n.id, n])),
-		[simulationNodes],
-	);
+	// No memoization - recalculate nodeMap on every render
+	const nodeMap = new Map(simulationNodes.map((n) => [n.id, n]));
+
+	// Debug: Log nodes and edges on first render
+	if (simulationNodes.length > 0 && edges.length > 0) {
+		const dirs = simulationNodes.filter(n => n.type === "directory");
+		const rootNode = simulationNodes.find(n => n.id === "/" || n.path === "/");
+		const rootEdges = edges.filter(e => e.source === "/");
+		const dirEdges = rootEdges.filter(e => {
+			const target = simulationNodes.find(n => n.id === e.target);
+			return target?.type === "directory";
+		});
+		console.log(`📊 GRAPH STATE: ${simulationNodes.length} nodes, ${dirs.length} dirs, ${edges.length} edges`);
+		console.log(`🏠 Root node:`, rootNode);
+		console.log(`🔗 Edges from root: ${rootEdges.length} total, ${dirEdges.length} to directories`);
+		console.log(`   Targets:`, rootEdges.map(e => e.target));
+	}
 
 	if (contextLost) {
 		return (
@@ -196,9 +226,13 @@ export function RepoGraph3D({ nodes, edges, onNodeClick }: RepoGraph3DProps) {
 			<pointLight position={[-100, -100, -100]} intensity={0.5} />
 
 			{/* Render edges first so they appear behind nodes */}
-			{edges.map((edge, i) => (
-				<FileEdge3D key={`edge-${i}`} edge={edge} nodes={nodeMap} />
-			))}
+			{edges.map((edge, i) => {
+				const source = nodeMap.get(edge.source);
+				const target = nodeMap.get(edge.target);
+				// Include node positions in key to force re-render when positions change
+				const key = `edge-${i}-${source?.x?.toFixed(1) ?? 0}-${source?.y?.toFixed(1) ?? 0}-${target?.x?.toFixed(1) ?? 0}-${target?.y?.toFixed(1) ?? 0}`;
+				return <FileEdge3D key={key} edge={edge} nodes={nodeMap} />;
+			})}
 
 			{/* Render nodes */}
 			{simulationNodes.map((node) => (

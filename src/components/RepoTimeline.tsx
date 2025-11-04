@@ -1,9 +1,10 @@
-import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useState } from "react";
 import { TEST_MODE } from "../config";
 import { usePlaybackTimer } from "../hooks/usePlaybackTimer";
 import { useRepoData } from "../hooks/useRepoData";
 import type { RepoTimelineProps } from "../lib/types";
+import { StorageService } from "../services/storageService";
 import { FileNode } from "../types";
 import { getCurrentIndex } from "../utils/timelineHelpers";
 import { EmptyState } from "./EmptyState";
@@ -58,6 +59,7 @@ export function RepoTimeline({
 	const [playbackDirection, setPlaybackDirection] = useState<PlaybackDirection>(
 		initialPlaybackDirection,
 	);
+	const [isBannerVisible, setIsBannerVisible] = useState(true);
 
 	const currentIndex = getCurrentIndex(commits, currentTime);
 
@@ -79,6 +81,15 @@ export function RepoTimeline({
 	const handleNodeClick = useCallback((node: FileNode) => {
 		setSelectedNode(node);
 		console.log("Selected node:", node);
+	}, []);
+
+	const handleClearCache = useCallback(() => {
+		StorageService.clearCache(repoPath);
+		loadCommits(true); // Force reload from API
+	}, [repoPath, loadCommits]);
+
+	const handleToggleBannerVisibility = useCallback(() => {
+		setIsBannerVisible((prev) => !prev);
 	}, []);
 
 	if (loading) {
@@ -123,8 +134,8 @@ export function RepoTimeline({
 
 	return (
 		<div className="w-full h-full relative flex flex-col">
-			{/* 3D Visualization */}
-			<div className="flex-1 relative">
+			{/* 3D Visualization - fills all available space */}
+			<div className="flex-1 relative z-0">
 				<RepoGraph3D
 					nodes={currentCommit.files}
 					edges={currentCommit.edges}
@@ -132,31 +143,47 @@ export function RepoTimeline({
 				/>
 			</div>
 
-			{/* Repository Status Banner - above scrubber */}
-			{repoStatus && (
-				<RepoStatusBanner
-					github={repoStatus.github}
-					cache={repoStatus.cache}
-					recommendation={repoStatus.recommendation}
-					backgroundLoading={backgroundLoading}
-					loadProgress={loadProgress}
-				/>
-			)}
-
-			{/* Timeline Controls */}
+			{/* Timeline Controls - sits at bottom with higher z-index */}
 			{showControls && (
-				<TimelineScrubber
-					commits={commits}
-					currentTime={currentTime}
-					onTimeChange={setCurrentTime}
-					timeRange={timeRange}
-					isPlaying={isPlaying}
-					onPlayPause={handlePlayPause}
-					playbackSpeed={playbackSpeed}
-					onSpeedChange={setPlaybackSpeed}
-					playbackDirection={playbackDirection}
-					onDirectionChange={setPlaybackDirection}
-				/>
+				<div className="relative flex flex-col">
+					{/* Repository Status Banner - positioned just above scrubber, slides up/down */}
+					{repoStatus && (
+						<div className="absolute bottom-full left-0 right-0">
+							<RepoStatusBanner
+								github={repoStatus.github}
+								cache={repoStatus.cache}
+								recommendation={repoStatus.recommendation}
+								backgroundLoading={backgroundLoading}
+								loadProgress={loadProgress}
+								onClearCache={handleClearCache}
+								isVisible={isBannerVisible}
+								onVisibilityChange={setIsBannerVisible}
+								toggleButton={
+									<button
+										onClick={handleToggleBannerVisibility}
+										className="absolute -top-7 left-2 p-1 bg-gray-900 bg-opacity-90 text-gray-400 hover:text-white rounded transition-colors"
+										title={isBannerVisible ? "Hide cache status" : "Show cache status"}
+										style={{ transform: 'translateY(-18px)' }}
+									>
+										{isBannerVisible ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+									</button>
+								}
+							/>
+						</div>
+					)}
+					<TimelineScrubber
+						commits={commits}
+						currentTime={currentTime}
+						onTimeChange={setCurrentTime}
+						timeRange={timeRange}
+						isPlaying={isPlaying}
+						onPlayPause={handlePlayPause}
+						playbackSpeed={playbackSpeed}
+						onSpeedChange={setPlaybackSpeed}
+						playbackDirection={playbackDirection}
+						onDirectionChange={setPlaybackDirection}
+					/>
+				</div>
 			)}
 
 			{/* Node Info Panel */}

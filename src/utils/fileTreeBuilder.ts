@@ -1,7 +1,11 @@
 import { FileEdge, FileNode } from "../types";
 
+// Version marker to verify code updates
+export const FILE_TREE_BUILDER_VERSION = "2025-11-04-v2";
+
 /**
  * Input data for building file tree - minimal file information
+ * Updated: 2025-11-04 00:00:00
  */
 export interface FileData {
 	path: string;
@@ -16,10 +20,10 @@ export interface FileData {
  * @returns Array of FileNode objects including both files and generated directory nodes
  */
 export function buildFileTree(files: FileData[]): FileNode[] {
+	console.log(`🔨 buildFileTree called with ${files.length} files`);
 	const nodes: FileNode[] = [];
 	const pathMap = new Map<string, FileNode>();
 	const directoriesNeeded = new Set<string>();
-	let hasRootFiles = false;
 
 	// First pass: create file nodes and identify needed directories
 	files.forEach((file) => {
@@ -35,9 +39,6 @@ export function buildFileTree(files: FileData[]): FileNode[] {
 
 		// Identify all parent directories needed
 		const pathParts = file.path.split("/");
-		if (pathParts.length === 1) {
-			hasRootFiles = true;
-		}
 		for (let i = 1; i < pathParts.length; i++) {
 			const dirPath = pathParts.slice(0, i).join("/");
 			directoriesNeeded.add(dirPath);
@@ -59,8 +60,9 @@ export function buildFileTree(files: FileData[]): FileNode[] {
 		}
 	});
 
-	// Add virtual root node if there are root-level files
-	if (hasRootFiles) {
+	// Always add virtual root node to anchor the graph
+	// Only skip if there are no files at all
+	if (files.length > 0 && !pathMap.has("/")) {
 		const rootNode: FileNode = {
 			id: "/",
 			path: "/",
@@ -70,6 +72,11 @@ export function buildFileTree(files: FileData[]): FileNode[] {
 		};
 		nodes.push(rootNode);
 		pathMap.set("/", rootNode);
+		console.log("✓ Created root node");
+	} else if (files.length === 0) {
+		console.log("✗ No root node: no files");
+	} else if (pathMap.has("/")) {
+		console.log("✗ No root node: already exists in pathMap");
 	}
 
 	return nodes;
@@ -82,7 +89,9 @@ export function buildFileTree(files: FileData[]): FileNode[] {
  * @returns Array of FileEdge objects connecting parents to children
  */
 export function buildEdges(files: FileData[]): FileEdge[] {
+	console.log(`🔗 buildEdges called with ${files.length} files`);
 	const edges: FileEdge[] = [];
+	const directoriesAdded = new Set<string>();
 
 	// Build parent-child relationships based on file paths
 	files.forEach((file) => {
@@ -90,11 +99,41 @@ export function buildEdges(files: FileData[]): FileEdge[] {
 		if (pathParts.length > 1) {
 			// Connect to parent directory
 			const parentPath = pathParts.slice(0, -1).join("/");
+			console.log(`  File edge: ${parentPath} → ${file.path}`);
 			edges.push({
 				source: parentPath,
 				target: file.path,
 				type: "parent",
 			});
+
+			// Also create edges for ALL directories in the path (including top-level)
+			// Start from i=0 to include the first directory level
+			for (let i = 0; i < pathParts.length - 1; i++) {
+				const dirPath = pathParts.slice(0, i + 1).join("/");
+				const parentDirPath = i > 0 ? pathParts.slice(0, i).join("/") : "";
+
+				// Avoid duplicate edges
+				const edgeKey = `${parentDirPath || "/"}->${dirPath}`;
+				if (!directoriesAdded.has(edgeKey)) {
+					directoriesAdded.add(edgeKey);
+
+					if (parentDirPath === "") {
+						// Connect top-level directory to virtual root
+						edges.push({
+							source: "/",
+							target: dirPath,
+							type: "parent",
+						});
+					} else {
+						// Connect directory to its parent
+						edges.push({
+							source: parentDirPath,
+							target: dirPath,
+							type: "parent",
+						});
+					}
+				}
+			}
 		} else {
 			// Root-level file - connect to virtual root
 			edges.push({
@@ -104,6 +143,12 @@ export function buildEdges(files: FileData[]): FileEdge[] {
 			});
 		}
 	});
+
+	const rootEdges = edges.filter(e => e.source === "/");
+	console.log(`  ✓ Created ${edges.length} total edges, ${rootEdges.length} from root`);
+	if (rootEdges.length > 0) {
+		console.log(`  Root edge targets:`, rootEdges.map(e => e.target));
+	}
 
 	return edges;
 }

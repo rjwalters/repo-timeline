@@ -43,21 +43,17 @@ export function TimelineScrubber({
 
 	const handlePrevious = () => {
 		if (currentIndex > 0) {
-			// Jump to 3 seconds before the PR to see the transition animation
+			// Jump directly to the commit time
 			const targetTime = commits[currentIndex - 1].date.getTime();
-			const offsetTime = targetTime - 3000; // 3 seconds before
-			// Make sure we don't go before the start of the timeline
-			onTimeChange(Math.max(timeRange.start, offsetTime));
+			onTimeChange(targetTime);
 		}
 	};
 
 	const handleNext = () => {
 		if (currentIndex < commits.length - 1) {
-			// Jump to 3 seconds before the PR to see the transition animation
+			// Jump directly to the commit time
 			const targetTime = commits[currentIndex + 1].date.getTime();
-			const offsetTime = targetTime - 3000; // 3 seconds before
-			// Make sure we don't go before the start of the timeline
-			onTimeChange(Math.max(timeRange.start, offsetTime));
+			onTimeChange(targetTime);
 		}
 	};
 
@@ -74,7 +70,7 @@ export function TimelineScrubber({
 	if (!currentCommit) return null;
 
 	return (
-		<div className="w-full bg-gray-900 bg-opacity-95 text-white p-4 border-t border-gray-700 backdrop-blur-sm">
+		<div className="w-full bg-gray-900 text-white p-4 border-t border-gray-700 relative z-20">
 			<div className="max-w-7xl mx-auto">
 				{/* Commit info */}
 				<CommitInfo

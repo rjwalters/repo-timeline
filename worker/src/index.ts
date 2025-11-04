@@ -121,6 +121,10 @@ export default {
 		// Check for force refresh parameter
 		const forceRefresh = url.searchParams.get("refresh") === "true";
 
+		// Get pagination parameters
+		const offset = Number.parseInt(url.searchParams.get("offset") || "0", 10);
+		const limit = Number.parseInt(url.searchParams.get("limit") || "40", 10);
+
 		try {
 			// Clear cache if force refresh requested
 			if (forceRefresh) {
@@ -137,6 +141,10 @@ export default {
 				console.log(
 					`Serving cached data for ${fullName} (${cached.commits.length} commits)`,
 				);
+
+				// Apply pagination to cached data
+				const paginatedCommits = cached.commits.slice(offset, offset + limit);
+				const hasMore = offset + limit < cached.commits.length;
 
 				// Trigger background update if cache is old (> 1 hour)
 				const cacheAge = Date.now() / 1000 - cached.lastUpdated;
@@ -156,12 +164,16 @@ export default {
 					);
 				}
 
-				return new Response(JSON.stringify(cached.commits), {
+				return new Response(JSON.stringify(paginatedCommits), {
 					headers: {
 						...corsHeaders,
 						"Content-Type": "application/json",
 						"X-Cache": "HIT",
 						"X-Cache-Age": Math.round(cacheAge).toString(),
+						"X-Total-Count": cached.commits.length.toString(),
+						"X-Has-More": hasMore.toString(),
+						"X-Offset": offset.toString(),
+						"X-Limit": limit.toString(),
 					},
 				});
 			}
@@ -175,11 +187,19 @@ export default {
 				repo,
 			);
 
-			return new Response(JSON.stringify(commits), {
+			// Apply pagination
+			const paginatedCommits = commits.slice(offset, offset + limit);
+			const hasMore = offset + limit < commits.length;
+
+			return new Response(JSON.stringify(paginatedCommits), {
 				headers: {
 					...corsHeaders,
 					"Content-Type": "application/json",
 					"X-Cache": "MISS",
+					"X-Total-Count": commits.length.toString(),
+					"X-Has-More": hasMore.toString(),
+					"X-Offset": offset.toString(),
+					"X-Limit": limit.toString(),
 				},
 			});
 		} catch (error) {

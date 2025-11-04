@@ -1,6 +1,6 @@
 import { Sphere, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { FileNode } from "../types";
 
@@ -9,7 +9,7 @@ interface FileNode3DProps {
 	onClick?: (node: FileNode) => void;
 }
 
-export const FileNode3D = memo(function FileNode3D({
+export function FileNode3D({
 	node,
 	onClick,
 }: FileNode3DProps) {
@@ -20,9 +20,11 @@ export const FileNode3D = memo(function FileNode3D({
 	const deletionStartTime = useRef<number | null>(null);
 
 	// Calculate target radius based on LOG of file size
-	// Directories get a fixed size, files scale with their size
-	const targetRadius =
-		node.type === "directory"
+	// Root node is larger, directories get a fixed size, files scale with their size
+	const isRootNode = node.id === "/" || node.path === "/";
+	const targetRadius = isRootNode
+		? 5.0 // Root node is larger
+		: node.type === "directory"
 			? 3.0 // Fixed size for directories
 			: Math.max(2.0, Math.min(15, Math.log10(node.size + 1) * 4));
 
@@ -45,8 +47,10 @@ export const FileNode3D = memo(function FileNode3D({
 		}
 	}, [node.fileStatus, node.previousSize, targetRadius]);
 
-	// Base color based on file type - directories bright blue, files green
-	const baseColor = node.type === "directory" ? "#60a5fa" : "#10b981";
+	// Base color based on file type
+	// Root node is white, directories bright blue, files green
+	const isRoot = node.id === "/" || node.path === "/";
+	const baseColor = isRoot ? "#ffffff" : node.type === "directory" ? "#60a5fa" : "#10b981";
 
 	// Determine transition color based on file status and size change
 	let transitionColor: string | null = null;
@@ -112,11 +116,11 @@ export const FileNode3D = memo(function FileNode3D({
 		}
 	});
 
-	const handleClick = useCallback(() => {
+	const handleClick = () => {
 		if (onClick) {
 			onClick(node);
 		}
-	}, [onClick, node]);
+	};
 
 	// Calculate final color by blending base color with transition color
 	const finalColor =
@@ -147,7 +151,7 @@ export const FileNode3D = memo(function FileNode3D({
 					<meshStandardMaterial
 						color={finalColor}
 						emissive={finalColor}
-						emissiveIntensity={transitionOpacity > 0 ? 0.5 : 0.3}
+						emissiveIntensity={isRoot ? 1.0 : transitionOpacity > 0 ? 0.5 : 0.3}
 						roughness={0.4}
 						metalness={0.6}
 						transparent={node.fileStatus === "deleted"}
@@ -185,4 +189,4 @@ export const FileNode3D = memo(function FileNode3D({
 			)}
 		</group>
 	);
-});
+}

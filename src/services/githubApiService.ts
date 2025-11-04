@@ -1,6 +1,8 @@
 import type { CommitData, LoadProgress, RateLimitInfo } from "../types";
 import { FileStateTracker } from "../utils/fileStateTracker";
-import { buildEdges, buildFileTree } from "../utils/fileTreeBuilder";
+import { buildEdges, buildFileTree, FILE_TREE_BUILDER_VERSION } from "../utils/fileTreeBuilder"; // Build tree/edges
+
+console.log(`📦 Loaded fileTreeBuilder version: ${FILE_TREE_BUILDER_VERSION}`);
 
 export interface GitHubPR {
 	number: number;
@@ -221,12 +223,21 @@ export class GitHubApiService {
 	/**
 	 * Fetch commit data from Cloudflare Worker
 	 */
-	private async fetchCommitsFromWorker(): Promise<GitHubWorkerCommit[]> {
+	private async fetchCommitsFromWorker(
+		offset = 0,
+		limit = 40,
+	): Promise<{
+		commits: GitHubWorkerCommit[];
+		totalCount: number;
+		hasMore: boolean;
+		offset: number;
+		limit: number;
+	}> {
 		if (!this.workerUrl) {
 			throw new Error("Worker URL not configured");
 		}
 
-		const url = `${this.workerUrl}/api/repo/${this.owner}/${this.repo}`;
+		const url = `${this.workerUrl}/api/repo/${this.owner}/${this.repo}?offset=${offset}&limit=${limit}`;
 		const response = await fetch(url);
 
 		if (!response.ok) {
@@ -238,8 +249,30 @@ export class GitHubApiService {
 			);
 		}
 
-		const data = await response.json();
-		return data;
+		const commits = await response.json();
+
+		// Parse pagination headers
+		const totalCount = Number.parseInt(
+			response.headers.get("X-Total-Count") || "0",
+			10,
+		);
+		const hasMore = response.headers.get("X-Has-More") === "true";
+		const responseOffset = Number.parseInt(
+			response.headers.get("X-Offset") || "0",
+			10,
+		);
+		const responseLimit = Number.parseInt(
+			response.headers.get("X-Limit") || "40",
+			10,
+		);
+
+		return {
+			commits,
+			totalCount,
+			hasMore,
+			offset: responseOffset,
+			limit: responseLimit,
+		};
 	}
 
 	getRateLimitInfo(): RateLimitInfo | null {
@@ -422,14 +455,14 @@ export class GitHubApiService {
 			}
 
 			// Worker now returns commits directly, not PRs
-			const workerCommits = await this.fetchCommitsFromWorker();
+			const workerResponse = await this.fetchCommitsFromWorker();
 
 			if (onProgress) {
 				onProgress({
-					loaded: workerCommits.length,
-					total: workerCommits.length,
+					loaded: workerResponse.commits.length,
+					total: workerResponse.totalCount,
 					percentage: 50,
-					message: `Loaded ${workerCommits.length} commits from cache`,
+					message: `Loaded ${workerResponse.commits.length} commits from cache`,
 				});
 			}
 
@@ -437,15 +470,15 @@ export class GitHubApiService {
 			const commits: CommitData[] = [];
 			const fileStateTracker = new FileStateTracker();
 
-			for (let i = 0; i < workerCommits.length; i++) {
-				const workerCommit = workerCommits[i];
+			for (let i = 0; i < workerResponse.commits.length; i++) {
+				const workerCommit = workerResponse.commits[i];
 
 				if (onProgress) {
 					onProgress({
 						loaded: i + 1,
-						total: workerCommits.length,
-						percentage: 50 + Math.round((i / workerCommits.length) * 50),
-						message: `Processing commit ${i + 1}/${workerCommits.length}`,
+						total: workerResponse.commits.length,
+						percentage: 50 + Math.round((i / workerResponse.commits.length) * 50),
+						message: `Processing commit ${i + 1}/${workerResponse.commits.length}`,
 					});
 				}
 
@@ -483,7 +516,7 @@ export class GitHubApiService {
 					onCommit(commit);
 				}
 
-				if (onSaveCache && (i % 5 === 0 || i === workerCommits.length - 1)) {
+				if (onSaveCache && (i % 5 === 0 || i === workerResponse.commits.length - 1)) {
 					onSaveCache([...commits]);
 				}
 			}
@@ -651,6 +684,7 @@ export class GitHubApiService {
 			// Build commit snapshot from current file state
 			const fileData = fileStateTracker.getFileData();
 			const files = buildFileTree(fileData);
+			// Build edges from the file data (which infers directory structure)
 			const edges = buildEdges(fileData);
 
 			const commit: CommitData = {
