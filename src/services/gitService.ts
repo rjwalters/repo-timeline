@@ -198,24 +198,23 @@ export class GitService {
 					this.workerUrl,
 				);
 				const cacheKey = this.getCacheKey();
-				const result =
-					await this.githubService.buildTimelineFromPRsIncremental(
-						onCommit
-							? (commit) => {
-									// Apply size change calculations incrementally
-									const calculated = this.calculateSizeChanges([commit]);
-									onCommit(calculated[0]);
-								}
-							: undefined,
-						onProgress,
-						(partialCommits) => {
-							// Save to cache incrementally
-							const calculated = this.calculateSizeChanges(partialCommits);
-							StorageService.saveCommits(cacheKey, calculated);
-						},
-					);
+				const result = await this.githubService.buildTimelineFromPRsIncremental(
+					onCommit
+						? (commit) => {
+								// Apply size change calculations incrementally
+								const calculated = this.calculateSizeChanges([commit]);
+								onCommit(calculated[0]);
+							}
+						: undefined,
+					onProgress,
+					(partialCommits) => {
+						// Save to cache incrementally
+						const calculated = this.calculateSizeChanges(partialCommits);
+						StorageService.saveCommits(cacheKey, calculated);
+					},
+				);
 
-				console.log('[AUTOLOAD] GitService initial load result:', {
+				console.log("[AUTOLOAD] GitService initial load result:", {
 					commits: result.commits.length,
 					hasMore: result.hasMore,
 					totalCount: result.totalCount,
@@ -400,12 +399,33 @@ export class GitService {
 					}
 				}
 
-				// Rebuild edges to include deleted nodes
+				// Rebuild both nodes and edges to include deleted nodes
+				// This is necessary because deleted files might be in directories
+				// that don't exist in the current commit, and we need to create
+				// those directory nodes so edges can reference them
 				if (addedDeletedNodes.length > 0) {
 					const fileData = commits[i].files.map((f) => ({
 						path: f.path,
 						size: f.size,
 					}));
+					// Build complete file tree including directory nodes
+					const newNodes = buildFileTree(fileData);
+
+					// Create a map to preserve existing node metadata
+					const existingNodeMap = new Map(
+						commits[i].files.map((n) => [n.path, n]),
+					);
+
+					// Merge metadata from existing nodes into new nodes
+					commits[i].files = newNodes.map((newNode) => {
+						const existingNode = existingNodeMap.get(newNode.path);
+						if (existingNode) {
+							// Preserve all metadata from existing node
+							return existingNode;
+						}
+						// New directory node - keep as is
+						return newNode;
+					});
 					commits[i].edges = buildEdges(fileData);
 				}
 			}
