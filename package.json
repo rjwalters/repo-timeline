@@ -1,5 +1,5 @@
 {
-	"name": "@rjwalters/repo-timeline",
+	"name": "react-github-timeline",
 	"version": "1.0.0",
 	"description": "3D visualization of GitHub repository evolution over time using React Three Fiber",
 	"private": false,

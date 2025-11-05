@@ -1,15 +1,15 @@
 # Embedding Repo Timeline
 
-This guide shows how to use the `@rjwalters/repo-timeline` package in your React application.
+This guide shows how to use the `react-github-timeline` package in your React application.
 
 ## Installation
 
 ```bash
-npm install @rjwalters/repo-timeline
+npm install react-github-timeline
 # or
-pnpm add @rjwalters/repo-timeline
+pnpm add react-github-timeline
 # or
-yarn add @rjwalters/repo-timeline
+yarn add react-github-timeline
 ```
 
 ### Peer Dependencies
@@ -23,8 +23,8 @@ npm install react@^18.0.0 react-dom@^18.0.0 three@^0.160.0 @react-three/fiber@^8
 ## Basic Usage
 
 ```tsx
-import { RepoTimeline } from '@rjwalters/repo-timeline';
-import '@rjwalters/repo-timeline/dist/style.css';
+import { RepoTimeline } from 'react-github-timeline';
+import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -70,8 +70,8 @@ import {
   CommitData,
   FileNode,
   FileEdge
-} from '@rjwalters/repo-timeline';
-import '@rjwalters/repo-timeline/dist/style.css';
+} from 'react-github-timeline';
+import 'react-github-timeline/dist/style.css';
 
 const App: React.FC = () => {
   const handleError = (error: Error) => {
@@ -102,8 +102,8 @@ const App: React.FC = () => {
 
 ```tsx
 import { useState } from 'react';
-import { RepoTimeline } from '@rjwalters/repo-timeline';
-import '@rjwalters/repo-timeline/dist/style.css';
+import { RepoTimeline } from 'react-github-timeline';
+import 'react-github-timeline/dist/style.css';
 
 function App() {
   const [error, setError] = useState<Error | null>(null);
@@ -131,8 +131,8 @@ function App() {
 ### With Custom Cloudflare Worker
 
 ```tsx
-import { RepoTimeline } from '@rjwalters/repo-timeline';
-import '@rjwalters/repo-timeline/dist/style.css';
+import { RepoTimeline } from 'react-github-timeline';
+import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -150,8 +150,8 @@ function App() {
 
 ```tsx
 import { useState } from 'react';
-import { RepoTimeline } from '@rjwalters/repo-timeline';
-import '@rjwalters/repo-timeline/dist/style.css';
+import { RepoTimeline } from 'react-github-timeline';
+import 'react-github-timeline/dist/style.css';
 
 function App() {
   const [repoPath, setRepoPath] = useState<string | null>(null);
@@ -185,8 +185,8 @@ function App() {
 ### Auto-playing Timeline
 
 ```tsx
-import { RepoTimeline } from '@rjwalters/repo-timeline';
-import '@rjwalters/repo-timeline/dist/style.css';
+import { RepoTimeline } from 'react-github-timeline';
+import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -205,8 +205,8 @@ function App() {
 ### Hidden Controls
 
 ```tsx
-import { RepoTimeline } from '@rjwalters/repo-timeline';
-import '@rjwalters/repo-timeline/dist/style.css';
+import { RepoTimeline } from 'react-github-timeline';
+import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -225,7 +225,7 @@ function App() {
 The package includes default styles that must be imported:
 
 ```tsx
-import '@rjwalters/repo-timeline/dist/style.css';
+import 'react-github-timeline/dist/style.css';
 ```
 
 The component uses Tailwind CSS classes internally. If you want to customize the appearance:

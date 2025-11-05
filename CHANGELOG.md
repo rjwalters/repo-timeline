@@ -36,7 +36,7 @@ Initial public release of Repo Timeline Visualizer
 - Toggleable controls via props
 
 **npm Package**
-- Published as `@rjwalters/repo-timeline`
+- Published as `react-github-timeline`
 - Full TypeScript support with declaration files
 - ESM and UMD bundle formats
 - React component with comprehensive props API

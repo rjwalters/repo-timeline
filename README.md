@@ -14,16 +14,16 @@ A 3D visualization tool for exploring Git repository evolution over time. Watch 
 Install the package in your React application:
 
 ```bash
-npm install @rjwalters/repo-timeline
+npm install react-github-timeline
 # or
-pnpm add @rjwalters/repo-timeline
+pnpm add react-github-timeline
 ```
 
 Then import and use the component:
 
 ```tsx
-import { RepoTimeline } from '@rjwalters/repo-timeline';
-import '@rjwalters/repo-timeline/dist/style.css';
+import { RepoTimeline } from 'react-github-timeline';
+import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
