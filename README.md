@@ -23,7 +23,6 @@ Then import and use the component:
 
 ```tsx
 import { RepoTimeline } from 'react-github-timeline';
-import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -32,6 +31,32 @@ function App() {
     </div>
   );
 }
+```
+
+### Avoiding Rate Limits (Recommended)
+
+GitHub's API has a rate limit of **60 requests/hour** for unauthenticated requests. For better performance, pass a GitHub personal access token:
+
+```tsx
+<RepoTimeline
+  repoPath="facebook/react"
+  githubToken="ghp_your_token_here"  // 5,000 requests/hour
+/>
+```
+
+**How to get a token:**
+1. Go to GitHub → Settings → Developer settings → [Personal access tokens](https://github.com/settings/tokens)
+2. Generate new token (classic)
+3. No scopes needed for public repositories
+4. Copy the token and pass it to the component
+
+⚠️ **Important:** Never commit tokens to your repository. Use environment variables:
+
+```tsx
+<RepoTimeline
+  repoPath="facebook/react"
+  githubToken={import.meta.env.VITE_GITHUB_TOKEN}
+/>
 ```
 
 📖 **[Full embedding guide](EMBEDDING.md)** - Installation, props, TypeScript, and advanced usage

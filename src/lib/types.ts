@@ -10,6 +10,9 @@ export interface RepoTimelineProps {
 	/** GitHub repository path in "owner/repo" format */
 	repoPath: string;
 
+	/** Optional GitHub personal access token for higher rate limits (5,000 req/hour vs 60 req/hour) */
+	githubToken?: string;
+
 	/** Optional Cloudflare Worker URL for cached data */
 	workerUrl?: string;
 

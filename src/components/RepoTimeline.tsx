@@ -27,6 +27,7 @@ import {
 
 export function RepoTimeline({
 	repoPath,
+	githubToken,
 	workerUrl,
 	onBack,
 	showControls = true,
@@ -54,6 +55,7 @@ export function RepoTimeline({
 		hasMoreCommits,
 	} = useRepoData({
 		repoPath,
+		githubToken,
 		workerUrl,
 		testMode: TEST_MODE,
 		onError,

@@ -24,7 +24,6 @@ npm install react@^18.0.0 react-dom@^18.0.0 three@^0.160.0 @react-three/fiber@^8
 
 ```tsx
 import { RepoTimeline } from 'react-github-timeline';
-import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -36,6 +35,34 @@ function App() {
 ```
 
 **Important**: The component requires a container with defined dimensions (width and height). It will fill 100% of its container.
+
+## Avoiding Rate Limits
+
+GitHub's API rate limit is **60 requests/hour** without authentication. For production use, we recommend passing a GitHub token:
+
+```tsx
+import { RepoTimeline } from 'react-github-timeline';
+
+function App() {
+  return (
+    <div style={{ width: '100vw', height: '100vh' }}>
+      <RepoTimeline
+        repoPath="facebook/react"
+        githubToken={import.meta.env.VITE_GITHUB_TOKEN}  // 5,000 requests/hour
+      />
+    </div>
+  );
+}
+```
+
+**Getting a GitHub Token:**
+1. Go to [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
+2. Click "Generate new token (classic)"
+3. Give it a name (e.g., "Timeline Visualizer")
+4. No scopes needed for public repositories
+5. Generate and copy the token
+
+**Security Best Practice:** Store tokens in environment variables, never commit them to source control.
 
 ## Props API
 
@@ -49,6 +76,7 @@ function App() {
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
+| `githubToken` | `string` | `undefined` | GitHub personal access token for higher rate limits (5,000 req/hour vs 60 req/hour) |
 | `workerUrl` | `string` | `undefined` | Cloudflare Worker URL for cached data |
 | `onError` | `(error: Error) => void` | `undefined` | Error callback handler |
 | `showControls` | `boolean` | `true` | Show timeline playback controls |
@@ -71,7 +99,6 @@ import {
   FileNode,
   FileEdge
 } from 'react-github-timeline';
-import 'react-github-timeline/dist/style.css';
 
 const App: React.FC = () => {
   const handleError = (error: Error) => {
@@ -103,7 +130,6 @@ const App: React.FC = () => {
 ```tsx
 import { useState } from 'react';
 import { RepoTimeline } from 'react-github-timeline';
-import 'react-github-timeline/dist/style.css';
 
 function App() {
   const [error, setError] = useState<Error | null>(null);
@@ -132,7 +158,6 @@ function App() {
 
 ```tsx
 import { RepoTimeline } from 'react-github-timeline';
-import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -151,7 +176,6 @@ function App() {
 ```tsx
 import { useState } from 'react';
 import { RepoTimeline } from 'react-github-timeline';
-import 'react-github-timeline/dist/style.css';
 
 function App() {
   const [repoPath, setRepoPath] = useState<string | null>(null);
@@ -186,7 +210,6 @@ function App() {
 
 ```tsx
 import { RepoTimeline } from 'react-github-timeline';
-import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -206,7 +229,6 @@ function App() {
 
 ```tsx
 import { RepoTimeline } from 'react-github-timeline';
-import 'react-github-timeline/dist/style.css';
 
 function App() {
   return (
@@ -225,7 +247,6 @@ function App() {
 The package includes default styles that must be imported:
 
 ```tsx
-import 'react-github-timeline/dist/style.css';
 ```
 
 The component uses Tailwind CSS classes internally. If you want to customize the appearance:

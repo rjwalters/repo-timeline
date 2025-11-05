@@ -183,6 +183,7 @@ function repoDataReducer(
 
 interface UseRepoDataOptions {
 	repoPath: string;
+	githubToken?: string;
 	workerUrl?: string;
 	testMode?: boolean;
 	onError?: (error: Error) => void;
@@ -190,6 +191,7 @@ interface UseRepoDataOptions {
 
 export function useRepoData({
 	repoPath,
+	githubToken,
 	workerUrl,
 	testMode = false,
 	onError,
@@ -229,7 +231,7 @@ export function useRepoData({
 				);
 				const githubApiService = new GitHubApiService(
 					repoPath,
-					undefined,
+					githubToken,
 					workerUrl,
 				);
 

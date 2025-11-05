@@ -12,22 +12,26 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js",
 			"require": "./dist/index.umd.js"
-		},
-		"./dist/style.css": "./dist/style.css"
+		}
 	},
 	"files": [
 		"dist"
 	],
 	"keywords": [
 		"react",
+		"react-component",
 		"github",
+		"github-api",
 		"visualization",
 		"3d",
 		"three.js",
+		"react-three-fiber",
 		"timeline",
 		"git",
 		"repository",
-		"force-directed-graph"
+		"commit-history",
+		"force-directed-graph",
+		"data-visualization"
 	],
 	"repository": {
 		"type": "git",
