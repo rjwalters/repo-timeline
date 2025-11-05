@@ -166,8 +166,8 @@ pnpm size:why     # Analyze what's included in bundles
 ```
 
 Current bundle sizes:
-- ESM: ~14 KB gzipped (limit: 18 KB)
-- UMD: ~14 KB gzipped (limit: 15 KB)
+- ESM: ~16 KB gzipped (limit: 18 KB)
+- UMD: ~16 KB gzipped (limit: 16.5 KB)
 
 ### Preview
 
@@ -178,7 +178,7 @@ pnpm preview      # Preview demo build
 ## Project Structure
 
 ```
-repo-timeline/
+github-timeline/
 ├── src/
 │   ├── lib/                      # NPM package exports
 │   │   ├── index.ts              # Main library entry point
@@ -355,14 +355,6 @@ This project joins a rich ecosystem of repository visualization tools. Here are 
 - 📦 **npm package** - Easy to install and integrate: `npm install react-github-timeline`
 
 We're inspired by these projects and grateful for the visualization work that came before us!
-
-## Publishing
-
-Ready to publish? See **[PUBLISHING_CHECKLIST.md](PUBLISHING_CHECKLIST.md)** for the complete guide including:
-- Testing the package locally with `npm pack`
-- Publishing to npm registry
-- Post-publish verification
-- Creating GitHub releases
 
 ## License
 

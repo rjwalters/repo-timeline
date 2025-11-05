@@ -244,12 +244,9 @@ function App() {
 
 ## Styling
 
-The package includes default styles that must be imported:
+The component uses Tailwind CSS classes internally, but styles are bundled with the component - no additional imports needed.
 
-```tsx
-```
-
-The component uses Tailwind CSS classes internally. If you want to customize the appearance:
+If you want to customize the appearance:
 
 1. **Override CSS variables** (recommended):
 ```css
