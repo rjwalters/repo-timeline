@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2025-11-05
+
+### Fixed
+- **Playback Timer**: Fixed infinite restart loop by memoizing `setCurrentTime` callback with empty dependency array
+- **Scrubber Start Position**: Timeline now correctly starts at first commit (commit #1) instead of last commit
+- **Timestamp Display**: Changed playback timestamp to show continuous scrubbed time instead of discrete commit timestamps
+
+### Added
+- **Performance Monitoring**: Added FPS, node count, and edge count overlay in bottom-right of 3D visualization
+- **IndexedDB Storage**: Migrated from localStorage to IndexedDB for 10-200x higher storage capacity (50MB-1GB+ vs 5-10MB)
+- **Enhanced Logging**: Added diagnostic logging for playback state and commit index changes (debug mode)
+
+### Changed
+- Storage backend now uses IndexedDB by default with localStorage fallback
+- Improved autoload logging with cleaner, less verbose output
+- Timeline scrubber now displays real-world time progression during playback
+
 ## [0.1.0] - 2025-11-05
 
 Initial development release of react-github-timeline
