@@ -35,3 +35,15 @@ worker/.dev.vars
 
 # Test coverage
 coverage
+
+# Build outputs
+demo-dist
+
+# npm pack tarballs
+*.tgz
+
+# Test scripts
+test-*.mjs
+
+# Test results
+test-results
