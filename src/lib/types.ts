@@ -1,5 +1,5 @@
 /**
- * Public API types for the repo-timeline package
+ * Public API types for the react-github-timeline package
  */
 
 export type PlaybackSpeed = 1 | 60 | 300 | 1800;

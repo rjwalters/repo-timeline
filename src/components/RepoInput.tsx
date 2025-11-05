@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 export function RepoInput() {
 	const navigate = useNavigate();
-	const [input, setInput] = useState("rjwalters/repo-timeline");
+	const [input, setInput] = useState("facebook/react");
 	const [error, setError] = useState<string | null>(null);
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -42,7 +42,7 @@ export function RepoInput() {
 					<div className="flex items-center justify-center gap-3 mb-4">
 						<h1 className="text-4xl font-bold">Repo Timeline Visualizer</h1>
 						<a
-							href="https://github.com/rjwalters/repo-timeline"
+							href="https://github.com/rjwalters/github-timeline"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-gray-400 hover:text-white transition-colors"

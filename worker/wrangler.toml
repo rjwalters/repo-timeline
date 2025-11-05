@@ -1,4 +1,4 @@
-name = "repo-timeline-api"
+name = "github-timeline-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 

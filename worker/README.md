@@ -74,7 +74,7 @@ The worker will round-robin through multiple tokens, giving you:
 npm run deploy
 ```
 
-Your worker will be deployed to: `https://repo-timeline-api.<your-subdomain>.workers.dev`
+Your worker will be deployed to: `https://github-timeline-api.<your-subdomain>.workers.dev`
 
 ## Development
 
@@ -97,7 +97,7 @@ Returns PR list without file data - perfect for initializing timeline range.
 
 **Example:**
 ```bash
-curl https://repo-timeline-api.your-subdomain.workers.dev/api/repo/facebook/react/metadata
+curl https://github-timeline-api.your-subdomain.workers.dev/api/repo/facebook/react/metadata
 ```
 
 **Response:**
@@ -126,7 +126,7 @@ Returns complete PR data including all file changes.
 
 **Example:**
 ```bash
-curl https://repo-timeline-api.your-subdomain.workers.dev/api/repo/facebook/react
+curl https://github-timeline-api.your-subdomain.workers.dev/api/repo/facebook/react
 ```
 
 **Response:**

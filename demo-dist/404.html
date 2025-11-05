@@ -8,13 +8,13 @@
     // This script takes the current URL and redirects to the root with the path as a query parameter
     // The root index.html will then handle the routing
 
-    // For URL like /repo-timeline/owner/repo
-    // We want to redirect to /repo-timeline/?p=/owner/repo
+    // For URL like /github-timeline/owner/repo
+    // We want to redirect to /github-timeline/?p=/owner/repo
     const segments = window.location.pathname.split('/').filter(s => s);
 
-    // segments = ['repo-timeline', 'owner', 'repo']
-    // We want to keep 'repo-timeline' as base and encode 'owner/repo' as the path
-    const base = segments[0]; // 'repo-timeline'
+    // segments = ['github-timeline', 'owner', 'repo']
+    // We want to keep 'github-timeline' as base and encode 'owner/repo' as the path
+    const base = segments[0]; // 'github-timeline'
     const pathSegments = segments.slice(1); // ['owner', 'repo']
     const encodedPath = pathSegments.join('/'); // 'owner/repo'
     const query = window.location.search;

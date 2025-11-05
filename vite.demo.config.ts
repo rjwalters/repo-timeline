@@ -19,7 +19,7 @@ const getBuildTime = () => {
 // https://vitejs.dev/config/
 export default defineConfig({
 	plugins: [react()],
-	base: "/repo-timeline/",
+	base: "/github-timeline/",
 	define: {
 		__GIT_HASH__: JSON.stringify(getGitHash()),
 		__BUILD_TIME__: JSON.stringify(getBuildTime()),

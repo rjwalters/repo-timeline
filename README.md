@@ -1,11 +1,11 @@
 # Repo Timeline Visualizer
 
-[![Test & Coverage](https://github.com/rjwalters/repo-timeline/actions/workflows/test.yml/badge.svg)](https://github.com/rjwalters/repo-timeline/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/rjwalters/repo-timeline/branch/main/graph/badge.svg)](https://codecov.io/gh/rjwalters/repo-timeline)
+[![Test & Coverage](https://github.com/rjwalters/github-timeline/actions/workflows/test.yml/badge.svg)](https://github.com/rjwalters/github-timeline/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/rjwalters/github-timeline/branch/main/graph/badge.svg)](https://codecov.io/gh/rjwalters/github-timeline)
 
 A 3D visualization tool for exploring Git repository evolution over time. Watch your codebase grow, change, and evolve with an interactive force-directed graph showing files and directories as connected nodes in 3D space.
 
-🌐 **[Live Demo](https://rjwalters.github.io/repo-timeline/)**
+🌐 **[Live Demo](https://rjwalters.github.io/github-timeline/)**
 
 ## Quick Start
 
@@ -80,7 +80,7 @@ This project automatically deploys to GitHub Pages via GitHub Actions. To enable
 2. Under **Build and deployment**, set **Source** to **GitHub Actions**
 3. Push to main branch to trigger deployment
 
-The site will be available at `https://[username].github.io/repo-timeline/`
+The site will be available at `https://[username].github.io/github-timeline/`
 
 ## Features
 

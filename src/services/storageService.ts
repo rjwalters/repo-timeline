@@ -8,7 +8,7 @@ interface CachedRepoData {
 }
 
 const CACHE_VERSION = 1;
-const CACHE_PREFIX = "repo-timeline:";
+const CACHE_PREFIX = "github-timeline:";
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export class StorageService {

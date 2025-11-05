@@ -88,21 +88,21 @@ npm run deploy
 **Success!** Your worker is now deployed. The output will show your worker URL:
 
 ```
-Published repo-timeline-api
-  https://repo-timeline-api.your-subdomain.workers.dev
+Published github-timeline-api
+  https://github-timeline-api.your-subdomain.workers.dev
 ```
 
 ### 7. Test the Worker
 
 ```bash
 # Health check
-curl https://repo-timeline-api.your-subdomain.workers.dev/health
+curl https://github-timeline-api.your-subdomain.workers.dev/health
 
 # Test metadata endpoint (fast - no file data)
-curl https://repo-timeline-api.your-subdomain.workers.dev/api/repo/facebook/react/metadata
+curl https://github-timeline-api.your-subdomain.workers.dev/api/repo/facebook/react/metadata
 
 # Test full data endpoint (includes all PR files)
-curl https://repo-timeline-api.your-subdomain.workers.dev/api/repo/facebook/react
+curl https://github-timeline-api.your-subdomain.workers.dev/api/repo/facebook/react
 ```
 
 ### 8. Update Frontend
@@ -114,7 +114,7 @@ Update `src/config.ts` to use your worker URL:
  * Cloudflare Worker URL for cached GitHub data
  */
 export const WORKER_URL =
-  "https://repo-timeline-api.your-subdomain.workers.dev"; // <-- Update this!
+  "https://github-timeline-api.your-subdomain.workers.dev"; // <-- Update this!
 ```
 
 The frontend is already configured to use the worker automatically. No other changes needed!

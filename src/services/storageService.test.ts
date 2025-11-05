@@ -124,14 +124,14 @@ describe("StorageService", () => {
 
 			expect(result).toBe(true);
 
-			const stored = localStorage.getItem("repo-timeline:facebook/react");
+			const stored = localStorage.getItem("github-timeline:facebook/react");
 			expect(stored).toBeTruthy();
 		});
 
 		it("should serialize data correctly", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			expect(stored).toBeTruthy();
 
 			const parsed = JSON.parse(stored!);
@@ -144,7 +144,7 @@ describe("StorageService", () => {
 		it("should convert Date objects to ISO strings", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const parsed = JSON.parse(stored!);
 
 			// Dates should be stored as strings
@@ -156,7 +156,7 @@ describe("StorageService", () => {
 		it("should include version number", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const parsed = JSON.parse(stored!);
 
 			expect(parsed.version).toBe(1);
@@ -167,7 +167,7 @@ describe("StorageService", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 			const afterSave = Date.now();
 
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const parsed = JSON.parse(stored!);
 
 			expect(parsed.lastUpdated).toBeGreaterThanOrEqual(beforeSave);
@@ -179,7 +179,7 @@ describe("StorageService", () => {
 
 			expect(result).toBe(true);
 
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const parsed = JSON.parse(stored!);
 			expect(parsed.commits).toHaveLength(0);
 		});
@@ -268,17 +268,17 @@ describe("StorageService", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
 			// Manually modify the version
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const data = JSON.parse(stored!);
 			data.version = 0; // Old version
-			localStorage.setItem("repo-timeline:test/repo", JSON.stringify(data));
+			localStorage.setItem("github-timeline:test/repo", JSON.stringify(data));
 
 			const loaded = StorageService.loadCommits("test/repo");
 
 			expect(loaded).toBeNull();
 
 			// Cache should be cleared
-			const stillExists = localStorage.getItem("repo-timeline:test/repo");
+			const stillExists = localStorage.getItem("github-timeline:test/repo");
 			expect(stillExists).toBeNull();
 		});
 
@@ -286,17 +286,17 @@ describe("StorageService", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
 			// Manually set lastUpdated to 25 hours ago
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const data = JSON.parse(stored!);
 			data.lastUpdated = Date.now() - 25 * 60 * 60 * 1000; // 25 hours ago
-			localStorage.setItem("repo-timeline:test/repo", JSON.stringify(data));
+			localStorage.setItem("github-timeline:test/repo", JSON.stringify(data));
 
 			const loaded = StorageService.loadCommits("test/repo");
 
 			expect(loaded).toBeNull();
 
 			// Cache should be cleared
-			const stillExists = localStorage.getItem("repo-timeline:test/repo");
+			const stillExists = localStorage.getItem("github-timeline:test/repo");
 			expect(stillExists).toBeNull();
 		});
 
@@ -304,10 +304,10 @@ describe("StorageService", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
 			// Manually set lastUpdated to 1 hour ago
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const data = JSON.parse(stored!);
 			data.lastUpdated = Date.now() - 1 * 60 * 60 * 1000; // 1 hour ago
-			localStorage.setItem("repo-timeline:test/repo", JSON.stringify(data));
+			localStorage.setItem("github-timeline:test/repo", JSON.stringify(data));
 
 			const loaded = StorageService.loadCommits("test/repo");
 
@@ -316,7 +316,7 @@ describe("StorageService", () => {
 		});
 
 		it("should return null on parse error", () => {
-			localStorage.setItem("repo-timeline:test/repo", "invalid json");
+			localStorage.setItem("github-timeline:test/repo", "invalid json");
 
 			const loaded = StorageService.loadCommits("test/repo");
 
@@ -395,7 +395,7 @@ describe("StorageService", () => {
 			expect(StorageService.loadCommits("repo3")).toBeNull();
 		});
 
-		it("should not clear non-repo-timeline items", () => {
+		it("should not clear non-github-timeline items", () => {
 			localStorage.setItem("other-app-data", "should not be deleted");
 			StorageService.saveCommits("repo1", mockCommits);
 
@@ -455,11 +455,11 @@ describe("StorageService", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
 			// Manually set lastUpdated to 2 hours ago
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const data = JSON.parse(stored!);
 			const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
 			data.lastUpdated = twoHoursAgo;
-			localStorage.setItem("repo-timeline:test/repo", JSON.stringify(data));
+			localStorage.setItem("github-timeline:test/repo", JSON.stringify(data));
 
 			const info = StorageService.getCacheInfo("test/repo");
 
@@ -468,7 +468,7 @@ describe("StorageService", () => {
 		});
 
 		it("should handle parse error gracefully", () => {
-			localStorage.setItem("repo-timeline:test/repo", "invalid json");
+			localStorage.setItem("github-timeline:test/repo", "invalid json");
 
 			const info = StorageService.getCacheInfo("test/repo");
 
@@ -503,7 +503,7 @@ describe("StorageService", () => {
 			expect(stats.estimatedSize).toBeLessThan(100000); // Less than 100KB
 		});
 
-		it("should not count non-repo-timeline items", () => {
+		it("should not count non-github-timeline items", () => {
 			localStorage.setItem("other-app-data", "some data");
 			StorageService.saveCommits("repo1", mockCommits);
 
@@ -529,8 +529,8 @@ describe("StorageService", () => {
 			StorageService.saveCommits("facebook/react", mockCommits);
 			StorageService.saveCommits("microsoft/vscode", mockCommits);
 
-			const reactKey = localStorage.getItem("repo-timeline:facebook/react");
-			const vscodeKey = localStorage.getItem("repo-timeline:microsoft/vscode");
+			const reactKey = localStorage.getItem("github-timeline:facebook/react");
+			const vscodeKey = localStorage.getItem("github-timeline:microsoft/vscode");
 
 			expect(reactKey).toBeTruthy();
 			expect(vscodeKey).toBeTruthy();
@@ -617,10 +617,10 @@ describe("StorageService", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
 			// Set to 23 hours ago (within expiry)
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const data = JSON.parse(stored!);
 			data.lastUpdated = Date.now() - 23 * 60 * 60 * 1000;
-			localStorage.setItem("repo-timeline:test/repo", JSON.stringify(data));
+			localStorage.setItem("github-timeline:test/repo", JSON.stringify(data));
 
 			const loaded = StorageService.loadCommits("test/repo");
 
@@ -631,10 +631,10 @@ describe("StorageService", () => {
 			StorageService.saveCommits("test/repo", mockCommits);
 
 			// Set to 25 hours ago (expired)
-			const stored = localStorage.getItem("repo-timeline:test/repo");
+			const stored = localStorage.getItem("github-timeline:test/repo");
 			const data = JSON.parse(stored!);
 			data.lastUpdated = Date.now() - 25 * 60 * 60 * 1000;
-			localStorage.setItem("repo-timeline:test/repo", JSON.stringify(data));
+			localStorage.setItem("github-timeline:test/repo", JSON.stringify(data));
 
 			const loaded = StorageService.loadCommits("test/repo");
 

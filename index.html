@@ -14,8 +14,8 @@
         const query = window.location.search;
         if (query && query.startsWith('?p=')) {
           const path = query.slice(3); // Extract path from ?p=/owner/repo
-          // Need to prepend the base path (/repo-timeline) to the path
-          const basePath = '/repo-timeline';
+          // Need to prepend the base path (/github-timeline) to the path
+          const basePath = '/github-timeline';
           window.history.replaceState(null, '', basePath + path);
         }
       })();

@@ -5,7 +5,7 @@ import { RepoWrapper } from "./RepoWrapper";
 
 function App() {
 	return (
-		<BrowserRouter basename="/repo-timeline">
+		<BrowserRouter basename="/github-timeline">
 			<div className="w-screen h-screen flex flex-col">
 				<div className="flex-1 overflow-hidden">
 					<Routes>

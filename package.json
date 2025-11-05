@@ -35,11 +35,11 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/rjwalters/repo-timeline"
+		"url": "https://github.com/rjwalters/github-timeline"
 	},
-	"homepage": "https://rjwalters.github.io/repo-timeline/",
+	"homepage": "https://rjwalters.github.io/github-timeline/",
 	"bugs": {
-		"url": "https://github.com/rjwalters/repo-timeline/issues"
+		"url": "https://github.com/rjwalters/github-timeline/issues"
 	},
 	"author": "Robb Walters",
 	"license": "MIT",

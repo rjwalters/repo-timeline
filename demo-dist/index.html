@@ -5,8 +5,8 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📊</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Repo Timeline Visualizer</title>
-    <script type="module" crossorigin src="/repo-timeline/assets/index-Dr_O99Db.js"></script>
-    <link rel="stylesheet" crossorigin href="/repo-timeline/assets/index-HIuigmig.css">
+    <script type="module" crossorigin src="/github-timeline/assets/index-JWx-qwib.js"></script>
+    <link rel="stylesheet" crossorigin href="/github-timeline/assets/index-HIuigmig.css">
   </head>
   <body>
     <div id="root"></div>
@@ -16,8 +16,8 @@
         const query = window.location.search;
         if (query && query.startsWith('?p=')) {
           const path = query.slice(3); // Extract path from ?p=/owner/repo
-          // Need to prepend the base path (/repo-timeline) to the path
-          const basePath = '/repo-timeline';
+          // Need to prepend the base path (/github-timeline) to the path
+          const basePath = '/github-timeline';
           window.history.replaceState(null, '', basePath + path);
         }
       })();
