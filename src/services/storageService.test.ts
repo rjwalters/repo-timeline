@@ -530,7 +530,9 @@ describe("StorageService", () => {
 			StorageService.saveCommits("microsoft/vscode", mockCommits);
 
 			const reactKey = localStorage.getItem("github-timeline:facebook/react");
-			const vscodeKey = localStorage.getItem("github-timeline:microsoft/vscode");
+			const vscodeKey = localStorage.getItem(
+				"github-timeline:microsoft/vscode",
+			);
 
 			expect(reactKey).toBeTruthy();
 			expect(vscodeKey).toBeTruthy();

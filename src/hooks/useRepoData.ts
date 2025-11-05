@@ -258,7 +258,7 @@ export function useRepoData({
 		};
 
 		loadInstantFeedback();
-	}, [repoPath, workerUrl, testMode]);
+	}, [repoPath, workerUrl, testMode, githubToken]);
 
 	// Stage 2: Load metadata to build timeline structure
 	useEffect(() => {
