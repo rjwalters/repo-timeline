@@ -26,7 +26,9 @@ export function ErrorState({
 						? "⚠️ GitHub API Rate Limit Exceeded"
 						: "Error Loading Repository"}
 				</div>
-				<div className="text-gray-300 mb-4">{error}</div>
+				<div className="text-gray-300 mb-4 whitespace-pre-line text-left max-w-xl mx-auto">
+					{error}
+				</div>
 				<div className="text-sm text-gray-500 mb-6">Repository: {repoPath}</div>
 
 				{rateLimit && (

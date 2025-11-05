@@ -197,7 +197,12 @@ export class GitHubApiService {
 
 			if (response.status === 404) {
 				throw new Error(
-					`Repository not found: ${this.owner}/${this.repo}. Repository may be private or doesn't exist.`,
+					`Unable to access repository: ${this.owner}/${this.repo}\n\n` +
+						`This could mean:\n` +
+						`• The repository is private (GitHub returns 404 for private repos)\n` +
+						`• The repository doesn't exist\n` +
+						`• The repository name is misspelled\n\n` +
+						`To access private repositories, authentication is required but not currently supported in this demo.`,
 				);
 			}
 

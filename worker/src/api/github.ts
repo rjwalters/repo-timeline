@@ -25,7 +25,11 @@ export async function fetchRepoInfo(
 
 	if (!response.ok) {
 		if (response.status === 404) {
-			throw new Error(`Repository ${owner}/${repo} not found`);
+			throw new Error(
+				`Unable to access repository: ${owner}/${repo}. ` +
+					`This repository may be private or doesn't exist. ` +
+					`GitHub returns 404 for both private repos and non-existent repos.`,
+			);
 		}
 		throw new Error(`GitHub API error: ${response.status}`);
 	}
@@ -56,7 +60,11 @@ export async function fetchCommitCount(
 
 	if (!response.ok) {
 		if (response.status === 404) {
-			throw new Error(`Repository ${owner}/${repo} or branch ${branch} not found`);
+			throw new Error(
+				`Unable to access repository: ${owner}/${repo} or branch ${branch}. ` +
+					`The repository may be private, doesn't exist, or the branch name is incorrect. ` +
+					`GitHub returns 404 for both private repos and non-existent repos.`,
+			);
 		}
 		if (response.status === 403) {
 			throw new Error("GitHub API rate limit exceeded");
