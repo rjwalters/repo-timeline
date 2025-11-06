@@ -19,13 +19,14 @@ export default defineConfig({
         '**/demo/**',
         'worker/**'
       ],
-      // Start with low thresholds and increase as we add tests
-      // Target: 50% by Phase 1, 80% by Phase 4
+      // Updated thresholds based on current coverage
+      // Previous: statements: 3, branches: 0, functions: 3, lines: 3
+      // Current coverage: statements: 83.68%, branches: 80.97%, functions: 83.67%, lines: 83.46%
       thresholds: {
-        statements: 3,
-        branches: 0,
-        functions: 3,
-        lines: 3
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80
       }
     },
   },

@@ -339,4 +339,28 @@ describe("StorageService", () => {
 			expect(cacheInfo.age).toBeDefined();
 		});
 	});
+
+	describe("getStorageStats", () => {
+		it("should return storage statistics", async () => {
+			// Clear all first to ensure clean state
+			await StorageService.clearAllCaches();
+
+			await StorageService.saveCommits("repo1", mockCommits);
+			await StorageService.saveCommits("repo2", mockCommits);
+
+			const stats = await StorageService.getStorageStats();
+
+			expect(stats.totalCaches).toBe(2);
+			expect(stats.estimatedSize).toBeGreaterThanOrEqual(0);
+		});
+
+		it("should return zero stats when empty", async () => {
+			await StorageService.clearAllCaches();
+
+			const stats = await StorageService.getStorageStats();
+
+			expect(stats.totalCaches).toBe(0);
+			expect(stats.estimatedSize).toBeGreaterThanOrEqual(0);
+		});
+	});
 });
