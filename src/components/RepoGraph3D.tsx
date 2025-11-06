@@ -18,11 +18,11 @@ import {
 import { limitGraph } from "../utils/graphLimiter";
 import { FileEdge3D } from "./FileEdge3D";
 import { FileNode3D } from "./FileNode3D";
-import { PerformanceStatsOverlay } from "./PerformanceStats";
 import {
 	PerformanceSettings,
 	PerformanceSettingsModal,
 } from "./PerformanceSettingsModal";
+import { PerformanceStatsOverlay } from "./PerformanceStats";
 
 interface RepoGraph3DProps {
 	nodes: FileNode[];
@@ -38,13 +38,22 @@ export interface RepoGraph3DHandle {
 
 export const RepoGraph3D = forwardRef<RepoGraph3DHandle, RepoGraph3DProps>(
 	function RepoGraph3D(
-		{ nodes, edges, onNodeClick, performanceSettings, onPerformanceSettingsChange },
+		{
+			nodes,
+			edges,
+			onNodeClick,
+			performanceSettings,
+			onPerformanceSettingsChange,
+		},
 		ref,
 	) {
 		const [simulationNodes, setSimulationNodes] = useState<FileNode[]>(nodes);
 		const [contextLost, setContextLost] = useState(false);
 		const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-		const [zoomLimits, setZoomLimits] = useState({ minDistance: 50, maxDistance: 800 });
+		const [zoomLimits, setZoomLimits] = useState({
+			minDistance: 50,
+			maxDistance: 800,
+		});
 		const simulationRef = useRef<ForceSimulation | null>(null);
 		const animationFrameRef = useRef<number>();
 		const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -66,7 +75,12 @@ export const RepoGraph3D = forwardRef<RepoGraph3DHandle, RepoGraph3DProps>(
 				maxNodes: performanceSettings.maxNodes,
 				maxEdges: performanceSettings.maxEdges,
 			});
-		}, [nodes, edges, performanceSettings.maxNodes, performanceSettings.maxEdges]);
+		}, [
+			nodes,
+			edges,
+			performanceSettings.maxNodes,
+			performanceSettings.maxEdges,
+		]);
 
 		useEffect(() => {
 			const { nodes: limitedNodes, edges: limitedEdges } = limitedGraph;
@@ -130,7 +144,9 @@ export const RepoGraph3D = forwardRef<RepoGraph3DHandle, RepoGraph3DProps>(
 
 						// Calculate graph bounds and update zoom limits
 						const bounds = calculateGraphBounds(allNodes);
-						const optimalLimits = calculateOptimalZoomLimits(bounds.maxDistance);
+						const optimalLimits = calculateOptimalZoomLimits(
+							bounds.maxDistance,
+						);
 						setZoomLimits(optimalLimits);
 
 						// Log bounds for debugging

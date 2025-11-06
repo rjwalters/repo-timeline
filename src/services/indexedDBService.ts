@@ -44,7 +44,9 @@ export class IndexedDBService {
 
 				// Create object store if it doesn't exist
 				if (!db.objectStoreNames.contains(STORE_NAME)) {
-					const store = db.createObjectStore(STORE_NAME, { keyPath: "repoKey" });
+					const store = db.createObjectStore(STORE_NAME, {
+						keyPath: "repoKey",
+					});
 					// Create index on lastUpdated for cleanup queries
 					store.createIndex("lastUpdated", "lastUpdated", { unique: false });
 				}
@@ -57,7 +59,10 @@ export class IndexedDBService {
 	/**
 	 * Save commit data to IndexedDB
 	 */
-	static async saveCommits(repoKey: string, commits: CommitData[]): Promise<boolean> {
+	static async saveCommits(
+		repoKey: string,
+		commits: CommitData[],
+	): Promise<boolean> {
 		try {
 			const db = await this.getDB();
 
@@ -85,7 +90,10 @@ export class IndexedDBService {
 		} catch (error) {
 			console.error("Failed to save to IndexedDB:", error);
 			// Handle quota exceeded by clearing old entries
-			if (error instanceof DOMException && error.name === "QuotaExceededError") {
+			if (
+				error instanceof DOMException &&
+				error.name === "QuotaExceededError"
+			) {
 				await this.clearOldestCache();
 			}
 			return false;

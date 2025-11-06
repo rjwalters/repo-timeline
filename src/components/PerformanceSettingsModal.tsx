@@ -315,7 +315,10 @@ export function PerformanceSettingsModal({
 									fontSize: "13px",
 									color: "#fbbf24",
 									lineHeight: "1.5",
-									marginBottom: warnings.length > 1 && index < warnings.length - 1 ? "8px" : "0",
+									marginBottom:
+										warnings.length > 1 && index < warnings.length - 1
+											? "8px"
+											: "0",
 								}}
 							>
 								⚠️ {warning}

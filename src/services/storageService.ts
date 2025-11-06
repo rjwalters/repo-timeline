@@ -10,7 +10,10 @@ export class StorageService {
 	/**
 	 * Save commit data to IndexedDB
 	 */
-	static async saveCommits(repoKey: string, commits: CommitData[]): Promise<boolean> {
+	static async saveCommits(
+		repoKey: string,
+		commits: CommitData[],
+	): Promise<boolean> {
 		return IndexedDBService.saveCommits(repoKey, commits);
 	}
 

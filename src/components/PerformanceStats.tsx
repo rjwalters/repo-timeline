@@ -30,9 +30,7 @@ export function PerformanceStatsOverlay({
 
 			// Update FPS every second
 			if (elapsed >= 1000) {
-				const currentFps = Math.round(
-					(frameCountRef.current * 1000) / elapsed,
-				);
+				const currentFps = Math.round((frameCountRef.current * 1000) / elapsed);
 				setFps(currentFps);
 				frameCountRef.current = 0;
 				lastTimeRef.current = currentTime;

@@ -90,8 +90,8 @@ function repoDataReducer(
 			// When setting commits in bulk (e.g., from cache), update time range
 			if (action.commits && action.commits.length > 0) {
 				// Sort commits chronologically (oldest first) to ensure consistent ordering
-				const sortedCommits = [...action.commits].sort((a, b) =>
-					a.date.getTime() - b.date.getTime()
+				const sortedCommits = [...action.commits].sort(
+					(a, b) => a.date.getTime() - b.date.getTime(),
 				);
 
 				const times = sortedCommits.map((c) => c.date.getTime());
@@ -182,8 +182,8 @@ function repoDataReducer(
 		case "APPEND_COMMITS": {
 			// Merge and sort all commits chronologically
 			const allCommits = [...state.commits, ...action.commits];
-			const sortedCommits = allCommits.sort((a, b) =>
-				a.date.getTime() - b.date.getTime()
+			const sortedCommits = allCommits.sort(
+				(a, b) => a.date.getTime() - b.date.getTime(),
 			);
 
 			// Update time range if needed

@@ -74,7 +74,8 @@ export function RepoTimeline({
 	const graphRef = useRef<RepoGraph3DHandle>(null);
 
 	// Performance settings
-	const [performanceSettings, setPerformanceSettings] = usePerformanceSettings();
+	const [performanceSettings, setPerformanceSettings] =
+		usePerformanceSettings();
 
 	const handleResetView = useCallback(() => {
 		graphRef.current?.resetCamera();

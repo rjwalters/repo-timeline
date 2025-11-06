@@ -74,7 +74,10 @@ describe("IndexedDBService", () => {
 
 	describe("saveCommits", () => {
 		it("should save commits to IndexedDB", async () => {
-			const result = await IndexedDBService.saveCommits("test/repo", mockCommits);
+			const result = await IndexedDBService.saveCommits(
+				"test/repo",
+				mockCommits,
+			);
 			expect(result).toBe(true);
 		});
 
@@ -96,14 +99,21 @@ describe("IndexedDBService", () => {
 		});
 
 		it("should return false on database errors", async () => {
-			const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const consoleErrorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {
+					// Suppress console errors in test
+				});
 
 			// Mock getDB to reject
 			vi.spyOn(IndexedDBService as any, "getDB").mockRejectedValueOnce(
 				new Error("Database error"),
 			);
 
-			const result = await IndexedDBService.saveCommits("test/repo", mockCommits);
+			const result = await IndexedDBService.saveCommits(
+				"test/repo",
+				mockCommits,
+			);
 
 			expect(result).toBe(false);
 			expect(consoleErrorSpy).toHaveBeenCalled();
@@ -174,7 +184,7 @@ describe("IndexedDBService", () => {
 			await new Promise((resolve) => {
 				request.onsuccess = () => {
 					const data = request.result;
-					data.lastUpdated = Date.now() - (25 * 60 * 60 * 1000); // 25 hours ago
+					data.lastUpdated = Date.now() - 25 * 60 * 60 * 1000; // 25 hours ago
 					store.put(data);
 					resolve(undefined);
 				};
@@ -185,7 +195,11 @@ describe("IndexedDBService", () => {
 		});
 
 		it("should return null on database errors", async () => {
-			const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const consoleErrorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {
+					// Suppress console errors in test
+				});
 
 			// Mock getDB to reject
 			vi.spyOn(IndexedDBService as any, "getDB").mockRejectedValueOnce(
@@ -223,7 +237,11 @@ describe("IndexedDBService", () => {
 		});
 
 		it("should handle clear errors gracefully", async () => {
-			const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const consoleErrorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {
+					// Suppress console errors in test
+				});
 
 			// Mock getDB to reject
 			vi.spyOn(IndexedDBService as any, "getDB").mockRejectedValueOnce(
@@ -250,7 +268,11 @@ describe("IndexedDBService", () => {
 		});
 
 		it("should handle clear all errors gracefully", async () => {
-			const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const consoleErrorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {
+					// Suppress console errors in test
+				});
 
 			// Mock getDB to reject
 			vi.spyOn(IndexedDBService as any, "getDB").mockRejectedValueOnce(
@@ -285,7 +307,11 @@ describe("IndexedDBService", () => {
 		});
 
 		it("should return false exists on database errors", async () => {
-			const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const consoleErrorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {
+					// Suppress console errors in test
+				});
 
 			// Mock getDB to reject
 			vi.spyOn(IndexedDBService as any, "getDB").mockRejectedValueOnce(
@@ -318,7 +344,11 @@ describe("IndexedDBService", () => {
 		});
 
 		it("should return zero stats on database errors", async () => {
-			const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const consoleErrorSpy = vi
+				.spyOn(console, "error")
+				.mockImplementation(() => {
+					// Suppress console errors in test
+				});
 
 			// Mock getDB to reject
 			vi.spyOn(IndexedDBService as any, "getDB").mockRejectedValueOnce(
@@ -402,7 +432,9 @@ describe("IndexedDBService", () => {
 			await IndexedDBService.saveCommits("repo/with_underscore", mockCommits);
 
 			const loaded1 = await IndexedDBService.loadCommits("repo/with-dash");
-			const loaded2 = await IndexedDBService.loadCommits("repo/with_underscore");
+			const loaded2 = await IndexedDBService.loadCommits(
+				"repo/with_underscore",
+			);
 
 			expect(loaded1).toBeTruthy();
 			expect(loaded2).toBeTruthy();
@@ -426,5 +458,4 @@ describe("IndexedDBService", () => {
 			expect(cacheInfo.age).toBeDefined();
 		});
 	});
-
 });

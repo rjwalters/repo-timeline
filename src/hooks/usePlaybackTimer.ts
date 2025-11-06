@@ -52,12 +52,16 @@ export function usePlaybackTimer({
 			timerRef.current = setInterval(() => {
 				tickCount++;
 				if (tickCount <= 10) {
-					console.log(`[PLAYBACK] Tick ${tickCount}, incrementing by ${timeIncrement}ms`);
+					console.log(
+						`[PLAYBACK] Tick ${tickCount}, incrementing by ${timeIncrement}ms`,
+					);
 				}
 
 				onTimeChange((prevTime) => {
 					if (tickCount <= 10) {
-						console.log(`[PLAYBACK] prevTime: ${new Date(prevTime).toISOString()}`);
+						console.log(
+							`[PLAYBACK] prevTime: ${new Date(prevTime).toISOString()}`,
+						);
 					}
 					let nextTime: number;
 
@@ -80,7 +84,9 @@ export function usePlaybackTimer({
 					}
 
 					if (tickCount <= 10) {
-						console.log(`[PLAYBACK] nextTime: ${new Date(nextTime).toISOString()}`);
+						console.log(
+							`[PLAYBACK] nextTime: ${new Date(nextTime).toISOString()}`,
+						);
 					}
 					return nextTime;
 				});
