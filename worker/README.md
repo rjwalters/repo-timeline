@@ -1,6 +1,6 @@
-# Repo Timeline API Worker
+# GitHub Timeline API Worker
 
-Cloudflare Worker that provides cached GitHub PR data for the Repo Timeline Visualizer.
+Cloudflare Worker that provides cached GitHub PR data for React GitHub Timeline.
 
 ## Features
 
@@ -16,6 +16,8 @@ Cloudflare Worker that provides cached GitHub PR data for the Repo Timeline Visu
 ```bash
 cd worker
 npm install
+# or
+pnpm install
 ```
 
 ### 2. Create D1 Database
@@ -36,11 +38,11 @@ database_id = "your-database-id-here"  # <- Add this
 ### 3. Run Migrations
 
 ```bash
-# Local development
-npm run db:migrate:local
+# Production (remote)
+npx wrangler d1 migrations apply repo_timeline --remote
 
-# Production
-npm run db:migrate
+# Local development
+npx wrangler d1 migrations apply repo_timeline --local
 ```
 
 ### 4. Set GitHub Token(s)
@@ -71,6 +73,8 @@ The worker will round-robin through multiple tokens, giving you:
 ### 5. Deploy
 
 ```bash
+npx wrangler deploy
+# or
 npm run deploy
 ```
 
@@ -80,6 +84,8 @@ Your worker will be deployed to: `https://github-timeline-api.<your-subdomain>.w
 
 ```bash
 # Start local dev server
+npx wrangler dev
+# or
 npm run dev
 ```
 
@@ -237,7 +243,7 @@ npx wrangler tail
 
 View D1 data:
 ```bash
-npx wrangler d1 execute repo_timeline --command "SELECT * FROM repos LIMIT 10"
+npx wrangler d1 execute repo_timeline --remote --command "SELECT * FROM repos LIMIT 10"
 ```
 
 ## Update Frontend

@@ -1,4 +1,4 @@
-# Embedding Repo Timeline
+# Embedding React GitHub Timeline
 
 This guide shows how to use the `react-github-timeline` package in your React application.
 
@@ -279,7 +279,7 @@ The component loads data progressively:
 
 1. **With Worker URL**: Fetches cached data from Cloudflare Worker
 2. **Without Worker URL**: Uses GitHub API directly (rate limited)
-3. **Local Cache**: Uses localStorage to cache fetched data
+3. **Local Cache**: Uses IndexedDB (with localStorage fallback) to cache fetched data
 
 The component shows a loading indicator while fetching data.
 
@@ -291,12 +291,37 @@ The component shows a loading indicator while fetching data.
 
 Requires WebGL support for 3D visualization.
 
+## Version Compatibility
+
+This package has been tested with:
+- **React**: 18.0.0+
+- **React DOM**: 18.0.0+
+- **Three.js**: 0.160.0+
+- **@react-three/fiber**: 8.0.0+
+- **@react-three/drei**: 9.0.0+
+
+These are listed as peer dependencies and must be installed in your project.
+
 ## Performance Considerations
 
 - Large repositories (1000+ PRs) may take time to load
 - 3D visualization is GPU-intensive
 - Consider using a Cloudflare Worker for better performance
-- The component uses localStorage caching to improve load times
+- The component uses IndexedDB caching (with localStorage fallback) to improve load times
+
+### Performance Monitoring
+
+The component includes a built-in performance overlay (visible in bottom-right corner) that displays:
+- **FPS**: Current frames per second
+- **Nodes**: Number of file/directory nodes in the graph
+- **Edges**: Number of connections between nodes
+
+This overlay is useful for:
+- Monitoring performance on large repositories
+- Understanding visualization complexity
+- Debugging rendering issues
+
+The overlay appears automatically when the visualization is active.
 
 ## Troubleshooting
 
@@ -314,7 +339,7 @@ Ensure the parent container has defined width and height:
 
 If you're hitting GitHub API rate limits, deploy a Cloudflare Worker:
 
-1. See [WORKER_DEPLOYMENT.md](./WORKER_DEPLOYMENT.md) for setup instructions
+1. See [WORKER_DEPLOYMENT.md](https://github.com/rjwalters/github-timeline/blob/main/WORKER_DEPLOYMENT.md) for setup instructions
 2. Pass the Worker URL via the `workerUrl` prop
 
 ### No data showing

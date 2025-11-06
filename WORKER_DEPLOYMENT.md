@@ -1,6 +1,6 @@
 # Cloudflare Worker Deployment Guide
 
-Quick guide to deploy the Repo Timeline API worker.
+Quick guide to deploy the GitHub Timeline API worker.
 
 ## Prerequisites
 
@@ -23,6 +23,8 @@ wrangler login
 ```bash
 cd worker
 npm install
+# or
+pnpm install
 ```
 
 ### 3. Create D1 Database
@@ -82,6 +84,8 @@ npx wrangler secret put GITHUB_TOKENS
 ### 6. Deploy Worker
 
 ```bash
+npx wrangler deploy
+# or
 npm run deploy
 ```
 
@@ -160,12 +164,12 @@ Expected actual usage: **$0/month** for most cases
 ## Troubleshooting
 
 ### "Database not found"
-- Make sure you ran migrations: `npm run db:migrate`
+- Make sure you ran migrations: `npx wrangler d1 migrations apply repo_timeline --remote`
 - Check `database_id` in `wrangler.toml` matches your D1 database
 
 ### "GitHub API rate limit exceeded"
 - Your token may not be set: `npx wrangler secret list`
-- Set it: `npx wrangler secret put GITHUB_TOKEN`
+- Set it: `npx wrangler secret put GITHUB_TOKENS`
 
 ### "CORS error" in browser
 - Worker includes CORS headers, but check browser console
@@ -180,6 +184,8 @@ Expected actual usage: **$0/month** for most cases
 
 ```bash
 # Start local dev server with D1
+npx wrangler dev
+# or
 npm run dev
 ```
 
@@ -198,6 +204,8 @@ git pull
 cd worker
 
 # Deploy update
+npx wrangler deploy
+# or
 npm run deploy
 ```
 

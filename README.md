@@ -1,4 +1,4 @@
-# Repo Timeline Visualizer
+# React GitHub Timeline
 
 [![npm version](https://img.shields.io/npm/v/react-github-timeline.svg)](https://www.npmjs.com/package/react-github-timeline)
 [![npm downloads](https://img.shields.io/npm/dm/react-github-timeline.svg)](https://www.npmjs.com/package/react-github-timeline)
@@ -9,6 +9,14 @@
 A 3D visualization tool for exploring Git repository evolution over time. Watch your codebase grow, change, and evolve with an interactive force-directed graph showing files and directories as connected nodes in 3D space.
 
 🌐 **[Live Demo](https://rjwalters.github.io/github-timeline/)**
+
+## Documentation
+
+- **[EMBEDDING.md](EMBEDDING.md)** - Complete guide for using the npm package in your React app
+- **[LLM_INTEGRATION.md](LLM_INTEGRATION.md)** - Comprehensive guide for AI assistants and LLM agents
+- **[WORKER_DEPLOYMENT.md](WORKER_DEPLOYMENT.md)** - Step-by-step instructions for deploying the Cloudflare Worker
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+- **[worker/README.md](worker/README.md)** - Technical API reference for the worker
 
 ## Quick Start
 
@@ -96,7 +104,7 @@ The site will be available at `https://[username].github.io/github-timeline/`
 - **Interactive Controls**: Pan, zoom, and rotate the 3D view with your mouse
 - **File Size Visualization**: Node sizes reflect file sizes (logarithmic scale)
 - **Real-time Physics**: Watch the graph settle into its natural layout with spring physics
-- **Smart Caching**: localStorage caching for instant subsequent loads
+- **Smart Caching**: IndexedDB caching (with localStorage fallback) for instant subsequent loads
 
 ## Technology Stack
 
@@ -165,9 +173,14 @@ pnpm size         # Check bundle sizes against limits
 pnpm size:why     # Analyze what's included in bundles
 ```
 
-Current bundle sizes:
+The project enforces bundle size limits to ensure the npm package stays lightweight:
 - ESM: ~16 KB gzipped (limit: 18 KB)
-- UMD: ~16 KB gzipped (limit: 16.5 KB)
+- UMD: ~16 KB gzipped (limit: 17.5 KB)
+
+These limits are checked automatically during:
+- Local builds (`pnpm build`)
+- CI/CD pipeline (GitHub Actions)
+- The build will fail if bundle sizes exceed limits
 
 ### Preview
 
@@ -200,7 +213,7 @@ github-timeline/
 │   ├── services/
 │   │   ├── gitService.ts         # Main Git service orchestration
 │   │   ├── githubApiService.ts   # GitHub API integration
-│   │   └── storageService.ts     # LocalStorage caching
+│   │   └── storageService.ts     # IndexedDB/localStorage caching
 │   ├── utils/
 │   │   ├── forceSimulation.ts    # Physics simulation for graph layout
 │   │   ├── fileTreeBuilder.ts    # Build file trees from PR data
@@ -245,7 +258,7 @@ The visualization uses a custom force-directed graph algorithm with three types 
 2. **Metadata fetch**: Quick metadata endpoint loads PR list and time range
 3. **Data source selection**:
    - **Cloudflare Worker** (preferred): Fetches cached PR data from global D1 database
-   - **localStorage cache**: Loads previously fetched data instantly
+   - **IndexedDB/localStorage cache**: Loads previously fetched data instantly
    - **GitHub API** (fallback): Direct API calls with rate limiting
 4. **Incremental loading**: PRs processed one-by-one, visualization updates in real-time
 5. **File state tracking**: Each PR's file changes are applied cumulatively
@@ -290,27 +303,14 @@ camera={{ position: [0, 0, 200], fov: 75 }}
 
 ## Optional: Cloudflare Worker Setup
 
-For better performance and to avoid GitHub rate limits, you can deploy the included Cloudflare Worker:
+For better performance and to avoid GitHub rate limits, you can deploy the included Cloudflare Worker. The worker provides:
+- Global caching of PR data across all users
+- Background updates to keep cache fresh
+- 5,000+ requests/hour (vs 60 unauthenticated GitHub API)
+- <100ms response times for cached repos
+- Free tier covers most usage
 
-1. See **[WORKER_DEPLOYMENT.md](WORKER_DEPLOYMENT.md)** for detailed setup instructions
-2. Worker provides:
-   - Global caching of PR data across all users
-   - Background updates to keep cache fresh
-   - 5,000+ requests/hour (vs 60 unauthenticated GitHub API)
-   - <100ms response times for cached repos
-   - Free tier covers most usage
-
-**Quick Setup:**
-```bash
-cd worker
-npm install
-npx wrangler d1 create repo_timeline
-npm run db:migrate
-npx wrangler secret put GITHUB_TOKENS
-npm run deploy
-```
-
-Update `src/config.ts` with your worker URL, and you're done!
+**See [WORKER_DEPLOYMENT.md](WORKER_DEPLOYMENT.md) for complete step-by-step setup instructions.**
 
 ## Future Enhancements
 
