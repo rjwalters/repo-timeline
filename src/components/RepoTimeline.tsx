@@ -99,6 +99,7 @@ export function RepoTimeline({
 		playbackDirection,
 		timeRange,
 		hasCommits: commits.length > 0,
+		commits,
 		onTimeChange: setCurrentTime,
 		onPlayingChange: setIsPlaying,
 	});
