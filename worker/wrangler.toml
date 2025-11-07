@@ -11,6 +11,3 @@ database_id = "d3bf793b-bc07-45f0-8b26-68a66f680a92"
 # Secrets (set with: wrangler secret put GITHUB_TOKENS)
 # GITHUB_TOKENS = "token1,token2,token3"  # Comma-separated for load balancing
 # Or single token: "ghp_yourtoken"
-
-[env.production]
-# Production-specific settings can go here

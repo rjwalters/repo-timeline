@@ -8,7 +8,7 @@
  * GitHub API responses and avoiding rate limits
  */
 export const WORKER_URL =
-	"https://repo-timeline-api.personal-account-251.workers.dev";
+	"https://github-timeline-api.personal-account-251.workers.dev";
 
 /**
  * Test mode flag - when true, shows hardcoded test data instead of real repo data

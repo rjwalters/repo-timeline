@@ -186,7 +186,6 @@ export async function fetchOldestCommits(
 	const perPage = 100;
 
 	console.log(`[fetchOldestCommits] CALLED for ${owner}/${repo}@${branch} - max: ${maxCommitsToReturn}`);
-	console.log(`[fetchOldestCommits] Using Link header approach`);
 
 	// Step 1: Get the Link header to find the last page number
 	const headUrl = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=${perPage}&page=1`;
@@ -278,11 +277,53 @@ export async function fetchOldestCommits(
 		throw new Error(`GitHub API error: ${lastPageResponse.status}`);
 	}
 
-	const lastPageCommits: any[] = await lastPageResponse.json();
+	let lastPageCommits: any[] = await lastPageResponse.json();
 
+	// GitHub API quirk: Sometimes the Link header reports a last page that's empty
+	// (e.g., elide-dev/elide reports page 3761 but it's empty, actual last page is 38)
+	// When this happens, get the actual commit count and calculate the correct last page
 	if (lastPageCommits.length === 0) {
-		console.log("Last page is empty - returning empty array");
-		return [];
+		console.log(`Last page ${lastPage} is empty - getting accurate commit count`);
+
+		// Get the actual commit count using the efficient count API
+		const actualCount = await fetchCommitCount(token, owner, repo, branch);
+		console.log(`Actual commit count: ${actualCount}`);
+
+		// Calculate the correct last page
+		const actualLastPage = Math.ceil(actualCount / perPage);
+		console.log(`Calculated actual last page: ${actualLastPage} (was ${lastPage})`);
+
+		if (actualLastPage === lastPage) {
+			// If they're the same, the page really is empty - no commits
+			console.log("Calculated page matches Link header - no commits in repository");
+			return [];
+		}
+
+		// Fetch the correct last page
+		const correctLastPageUrl = `https://api.github.com/repos/${owner}/${repo}/commits?sha=${branch}&per_page=${perPage}&page=${actualLastPage}`;
+
+		console.log(`Fetching correct last page: ${actualLastPage}`);
+
+		const correctLastPageResponse = await fetch(correctLastPageUrl, {
+			headers: {
+				Authorization: `Bearer ${token}`,
+				Accept: "application/vnd.github.v3+json",
+				"User-Agent": "Repo-Timeline-Worker",
+			},
+		});
+
+		if (!correctLastPageResponse.ok) {
+			throw new Error(`GitHub API error fetching page ${actualLastPage}: ${correctLastPageResponse.status}`);
+		}
+
+		lastPageCommits = await correctLastPageResponse.json();
+
+		if (lastPageCommits.length === 0) {
+			console.log(`Calculated last page ${actualLastPage} is also empty - no commits`);
+			return [];
+		}
+
+		console.log(`Successfully fetched ${lastPageCommits.length} commits from calculated page ${actualLastPage}`);
 	}
 
 	// Step 4: The last page contains the oldest commits in reverse chronological order
@@ -292,7 +333,7 @@ export async function fetchOldestCommits(
 	// Return up to maxCommitsToReturn oldest commits
 	const result = oldestCommitsReversed.slice(0, maxCommitsToReturn);
 
-	console.log(`Returning ${result.length} oldest commits from page ${lastPage}`);
+	console.log(`Returning ${result.length} oldest commits`);
 	return result;
 }
 

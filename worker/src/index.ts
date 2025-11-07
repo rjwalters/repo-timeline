@@ -51,6 +51,8 @@ export default {
 				JSON.stringify({
 					status: "ok",
 					tokens: tokenRotator.getTokenCount(),
+					version: "v0.3.0",
+					timestamp: new Date().toISOString(),
 				}),
 				{
 					headers: { ...corsHeaders, "Content-Type": "application/json" },
